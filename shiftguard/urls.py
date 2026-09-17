@@ -33,6 +33,30 @@ urlpatterns = [
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/register/', RegisterView.as_view(), name='register'),
     path('accounts/verify-email/<uidb64>/<token>/', VerifyEmailView.as_view(), name='verify-email'),
+    path(
+        'accounts/password-reset/',
+        auth_views.PasswordResetView.as_view(
+            template_name='registration/password_reset_form.html',
+            email_template_name='registration/password_reset_email.txt',
+            subject_template_name='registration/password_reset_subject.txt',
+        ),
+        name='password_reset',
+    ),
+    path(
+        'accounts/password-reset/done/',
+        auth_views.PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'),
+        name='password_reset_done',
+    ),
+    path(
+        'accounts/reset/<uidb64>/<token>/',
+        auth_views.PasswordResetConfirmView.as_view(template_name='registration/password_reset_confirm.html'),
+        name='password_reset_confirm',
+    ),
+    path(
+        'accounts/reset/done/',
+        auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'),
+        name='password_reset_complete',
+    ),
     path('api/', include(router.urls)),
     path('api/dashboard/summary/', dashboard_summary_api, name='api-dashboard-summary'),
     path('api/dashboard/charts/', charts_data_api, name='api-dashboard-charts'),

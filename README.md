@@ -99,6 +99,14 @@ for you):
 Without this, the "Sign in with Google" button simply doesn't render (checked
 via `if (!clientId) return null`) — everything else works normally.
 
+**Forgot your password?** Both frontends link to `/accounts/password-reset/`
+(a plain Django-rendered page, not a JSON API — it's an email-driven flow
+that naturally leaves the app anyway, so this reuses Django's own
+battle-tested `PasswordResetView`/`PasswordResetConfirmView` rather than
+reimplementing that token security a third time). Doesn't reveal whether an
+email is registered, and the reset link is single-use — it hashes in the
+account's password, so it stops working the moment it's used once.
+
 ## Running tests
 
 ```bash

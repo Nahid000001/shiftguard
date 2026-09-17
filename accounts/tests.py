@@ -1,3 +1,4 @@
+import re
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -125,3 +126,110 @@ class GoogleSignInEmailTrustTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotEqual(response.json()["username"], "squatter")
+
+
+class PasswordResetFlowTests(TestCase):
+    """Exercises Django's own password-reset views end-to-end through this
+    app's URLs/templates, rather than assuming the built-in views "just
+    work" once wired up - the exact link has to actually appear in the sent
+    email and actually work when followed."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="alice", email="alice@example.com", password="original-pw-123"
+        )
+
+    def _link_from_email(self):
+        self.assertEqual(len(mail.outbox), 1)
+        match = re.search(r"http://\S+/accounts/reset/\S+/", mail.outbox[0].body)
+        self.assertIsNotNone(match, "No reset link found in the sent email")
+        return match.group(0).replace("http://testserver", "")
+
+    def test_request_form_loads(self):
+        response = self.client.get(reverse("password_reset"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_requesting_a_reset_sends_an_email_with_a_working_link(self):
+        mail.outbox.clear()
+        response = self.client.post(reverse("password_reset"), {"email": "alice@example.com"})
+        self.assertRedirects(response, reverse("password_reset_done"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("alice@example.com", mail.outbox[0].to)
+        self.assertIn("Reset your ShiftGuard password", mail.outbox[0].subject)
+
+    def test_unknown_email_still_redirects_to_done_without_sending_mail(self):
+        """Must not reveal whether an email is registered - same response
+        either way, only the outbox differs."""
+        mail.outbox.clear()
+        response = self.client.post(reverse("password_reset"), {"email": "nobody@example.com"})
+        self.assertRedirects(response, reverse("password_reset_done"))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_full_reset_round_trip_changes_the_password(self):
+        mail.outbox.clear()
+        self.client.post(reverse("password_reset"), {"email": "alice@example.com"})
+        link = self._link_from_email()
+
+        # Django's confirm view redirects the first GET to a "set-password"
+        # variant of the URL that stores the validated token in the session -
+        # follow that, exactly like a real browser would.
+        confirm_response = self.client.get(link, follow=True)
+        self.assertEqual(confirm_response.status_code, 200)
+        self.assertTrue(confirm_response.context["validlink"])
+
+        set_password_url = confirm_response.redirect_chain[-1][0]
+        submit_response = self.client.post(
+            set_password_url,
+            {"new_password1": "a-brand-new-pw-456", "new_password2": "a-brand-new-pw-456"},
+        )
+        self.assertRedirects(submit_response, reverse("password_reset_complete"))
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("a-brand-new-pw-456"))
+        self.assertFalse(self.user.check_password("original-pw-123"))
+
+    def test_reset_link_is_single_use(self):
+        mail.outbox.clear()
+        self.client.post(reverse("password_reset"), {"email": "alice@example.com"})
+        link = self._link_from_email()
+
+        confirm_response = self.client.get(link, follow=True)
+        set_password_url = confirm_response.redirect_chain[-1][0]
+        self.client.post(
+            set_password_url,
+            {"new_password1": "a-brand-new-pw-456", "new_password2": "a-brand-new-pw-456"},
+        )
+
+        # The token's hash includes the password hash, which just changed -
+        # following the same original link again must now show it as invalid.
+        second_attempt = self.client.get(link, follow=True)
+        self.assertFalse(second_attempt.context["validlink"])
+
+    def test_mismatched_passwords_are_rejected(self):
+        mail.outbox.clear()
+        self.client.post(reverse("password_reset"), {"email": "alice@example.com"})
+        link = self._link_from_email()
+        confirm_response = self.client.get(link, follow=True)
+        set_password_url = confirm_response.redirect_chain[-1][0]
+
+        response = self.client.post(
+            set_password_url,
+            {"new_password1": "a-brand-new-pw-456", "new_password2": "does-not-match"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("original-pw-123"))
+
+    def test_weak_new_password_is_rejected(self):
+        mail.outbox.clear()
+        self.client.post(reverse("password_reset"), {"email": "alice@example.com"})
+        link = self._link_from_email()
+        confirm_response = self.client.get(link, follow=True)
+        set_password_url = confirm_response.redirect_chain[-1][0]
+
+        response = self.client.post(
+            set_password_url, {"new_password1": "password", "new_password2": "password"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("original-pw-123"))

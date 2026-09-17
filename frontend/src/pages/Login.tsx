@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { ApiError } from "../api/client";
+import { API_BASE, ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
 import { PasswordInput } from "../components/PasswordInput";
@@ -73,6 +73,9 @@ export function Login() {
             {submitting ? "Signing in…" : "Sign in"}
           </button>
         </form>
+        <p style={{ marginTop: "0.75rem", textAlign: "center", fontSize: "0.85rem" }}>
+          <a href={`${API_BASE}/accounts/password-reset/`}>Forgot your password?</a>
+        </p>
         <div style={{ margin: "1rem 0", display: "flex", justifyContent: "center" }}>
           <GoogleSignInButton
             onSuccess={(u) => {

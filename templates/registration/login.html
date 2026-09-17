@@ -39,6 +39,7 @@
             {{ form.password.errors }}
             <button type="submit">Sign in</button>
         </form>
+        <div class="switch-link"><a href="{% url 'password_reset' %}">Forgot your password?</a></div>
         <div class="switch-link">Don't have an account? <a href="{% url 'register' %}">Register</a></div>
     </div>
     <script>
