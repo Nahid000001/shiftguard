@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Delete agency · ShiftGuard{% endblock %}
+{% block content %}
+<h1>Delete "{{ object.name }}"?</h1>
+<p>This will also delete all its sites and their shifts.</p>
+<form method="post">
+    {% csrf_token %}
+    <button class="btn danger" type="submit">Delete</button>
+    <a class="btn secondary" href="{% url 'agencies:agency-list' %}">Cancel</a>
+</form>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Shifts · ShiftGuard{% endblock %}
+{% block content %}
+<h1>Shifts</h1>
+<a class="btn" href="{% url 'shifts:create' %}">+ Add shift</a>
+{% if has_shifts %}
+<a class="btn secondary" href="{% url 'shifts:create' %}?duplicate=1">⧉ Duplicate last shift</a>
+{% endif %}
+<table>
+    <thead>
+        <tr><th>Date</th><th>Site</th><th>Agency</th><th>Hours</th><th>Rate</th><th>Pay</th><th></th></tr>
+    </thead>
+    <tbody>
+        {% for shift in shifts %}
+        <tr>
+            <td>{{ shift.date }}</td>
+            <td>{{ shift.site.name }}</td>
+            <td>{{ shift.site.agency.name }}</td>
+            <td>{{ shift.duration_hours|floatformat:2 }}</td>
+            <td>£{{ shift.hourly_rate }}/hr</td>
+            <td>£{{ shift.calculated_pay }}</td>
+            <td class="row-actions">
+                <a href="{% url 'shifts:update' shift.pk %}">Edit</a>
+                <a href="{% url 'shifts:delete' shift.pk %}">Delete</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">No shifts logged yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% if is_paginated %}
+<div class="row-actions">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">« Prev</a>{% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Next »</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

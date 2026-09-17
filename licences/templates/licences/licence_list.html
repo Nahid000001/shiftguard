@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Licences · ShiftGuard{% endblock %}
+{% block content %}
+<h1>Licences</h1>
+<a class="btn" href="{% url 'licences:create' %}">+ Add licence</a>
+<table>
+    <thead>
+        <tr><th>Name</th><th>Number</th><th>Expiry</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+        {% for licence in licences %}
+        <tr>
+            <td>{{ licence.name }}</td>
+            <td>{{ licence.licence_number }}</td>
+            <td>{{ licence.expiry_date }}</td>
+            <td>
+                {% if licence.is_expired %}
+                    <span class="tag danger">Expired</span>
+                {% elif licence.is_expiring_soon %}
+                    <span class="tag warn">Expires in {{ licence.days_until_expiry }} days</span>
+                {% else %}
+                    <span class="tag good">Valid</span>
+                {% endif %}
+            </td>
+            <td class="row-actions">
+                <a href="{% url 'licences:update' licence.pk %}">Edit</a>
+                <a href="{% url 'licences:delete' licence.pk %}">Delete</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No licences yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

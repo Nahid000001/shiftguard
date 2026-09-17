@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en-gb">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ShiftGuard{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --border: #334155;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --accent: #38bdf8;
+            --warn: #f59e0b;
+            --danger: #f87171;
+            --good: #34d399;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        nav {
+            display: flex;
+            gap: 1.25rem;
+            padding: 1rem 1.5rem;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+        }
+        nav a {
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+        nav a:hover { color: var(--accent); }
+        nav .brand { font-weight: 700; color: var(--accent); margin-right: 0.5rem; }
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+        h2 { font-size: 1.15rem; margin: 1.5rem 0 0.75rem; color: var(--muted); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.5rem 0.6rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        th { color: var(--muted); font-weight: 600; }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .stat-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .stat {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            flex: 1;
+            min-width: 160px;
+        }
+        .stat .value { font-size: 1.6rem; font-weight: 700; }
+        .stat .label { color: var(--muted); font-size: 0.85rem; }
+        .btn {
+            display: inline-block;
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 0.45rem 0.9rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn.danger { background: var(--danger); color: #1a0000; }
+        .tag {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .tag.warn { background: rgba(245, 158, 11, 0.2); color: var(--warn); }
+        .tag.danger { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
+        .tag.good { background: rgba(52, 211, 153, 0.2); color: var(--good); }
+        form p { margin: 0.6rem 0; }
+        label { display: block; margin-bottom: 0.25rem; color: var(--muted); font-size: 0.85rem; }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #0b1220;
+            color: var(--text);
+        }
+        .row-actions a { margin-right: 0.5rem; font-size: 0.85rem; }
+        .messages { list-style: none; padding: 0; }
+        .messages li { padding: 0.6rem 1rem; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <span class="brand">ShiftGuard</span>
+        <a href="{% url 'dashboard:index' %}">Dashboard</a>
+        <a href="{% url 'shifts:list' %}">Shifts</a>
+        <a href="{% url 'agencies:agency-list' %}">Agencies</a>
+        <a href="{% url 'agencies:site-list' %}">Sites</a>
+        <a href="{% url 'licences:list' %}">Licences</a>
+    </nav>
+    <main>
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
