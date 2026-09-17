@@ -149,6 +149,52 @@ DRF API mirrors the same models under `/api/`. Every view requires login.
 
 `frontend/` — the React SPA (see `frontend/README.md`).
 
+## Deploying (Render + Vercel, both free tier)
+
+The backend is deployment-ready: `gunicorn` + `whitenoise` (serves static
+files without a separate server) + `dj-database-url` (reads a single
+`DATABASE_URL`, the format Render/Railway/most PaaS hosts provide) +
+`SECRET_KEY`/`DEBUG`/`ALLOWED_HOSTS`/`FRONTEND_URL` all read from env vars.
+`render.yaml` is a Render Blueprint — point Render at the repo and it
+provisions the web service + a free Postgres database from that file in one
+step, prompting you only for the few values it can't know
+(`ALLOWED_HOSTS`, `FRONTEND_URL`, `GOOGLE_CLIENT_ID`). A `Procfile` is there
+too if you use Railway instead (same idea, different convention).
+
+**Backend on Render:**
+1. Sign up at [render.com](https://render.com), connect your GitHub account
+2. New → Blueprint → select the `shiftguard` repo → Render reads `render.yaml`
+3. When prompted, set `ALLOWED_HOSTS` to the `.onrender.com` domain Render assigns (you'll see it in the dashboard, e.g. `shiftguard-api.onrender.com`) — leave `FRONTEND_URL` and `GOOGLE_CLIENT_ID` blank for now, you'll set them after the frontend is deployed
+4. Deploy. Free-tier services sleep after ~15 minutes idle — the first request after that takes 10-30s to wake up; this is a Render limitation, not a bug
+
+**Frontend on Vercel:**
+1. Sign up at [vercel.com](https://vercel.com), import the same GitHub repo
+2. Set the project's root directory to `frontend/` (Vercel auto-detects Vite)
+3. Add environment variables: `VITE_API_BASE_URL` = your Render backend URL (e.g. `https://shiftguard-api.onrender.com`), and `VITE_GOOGLE_CLIENT_ID` if using Google sign-in
+4. Deploy. Vercel gives you a URL like `https://shiftguard.vercel.app`
+
+**Wire the two together** (order matters — you need each URL before setting it on the other):
+- On Render, set `FRONTEND_URL` to your Vercel URL (enables CORS/CSRF for it) and redeploy
+- In Google Cloud Console (if using Google sign-in), add both the Vercel URL and the Render URL to "Authorized JavaScript origins"
+- If you want real emails (registration/password reset) instead of them just being logged, set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend` plus `EMAIL_HOST`/`EMAIL_HOST_USER`/`EMAIL_HOST_PASSWORD` on Render for a provider like SendGrid, Mailgun, or Gmail with an app password — otherwise verification/reset links only appear in Render's log viewer, which still works for testing but isn't real delivery
+
+## Installing on iOS (PWA)
+
+The React app is a installable PWA (`vite-plugin-pwa` generates the manifest
++ service worker at build time — nothing to configure). Once deployed:
+
+1. Open the Vercel URL in **Safari** on iPhone (must be Safari — Chrome/Firefox
+   on iOS can't install PWAs, that's an iOS platform restriction, not this app)
+2. Tap the Share icon → **Add to Home Screen**
+3. It installs with the ShiftGuard icon/name and opens full-screen (no Safari
+   address bar), just like a native app
+
+This isn't an App Store listing — there's no review process, no $99/year fee,
+and it works today. If you later want a real App Store presence, wrapping
+this same React app in [Capacitor](https://capacitorjs.com/) reuses ~100% of
+the existing code; a fully native Swift rewrite is the other end of the
+effort scale and would only reuse the backend API.
+
 ## Environment notes
 
 Originally built on a machine with no Homebrew, Node, or PostgreSQL — hence

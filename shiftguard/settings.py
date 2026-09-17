@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 
+import dj_database_url
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -39,7 +40,10 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'true').lower() == 'true'
 
-ALLOWED_HOSTS = []
+# Comma-separated in production, e.g. "shiftguard-api.onrender.com". Empty
+# list is fine for local dev - Django allows localhost/127.0.0.1 automatically
+# whenever DEBUG=True regardless of this setting.
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()]
 
 
 # Application definition
@@ -66,6 +70,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -100,16 +105,23 @@ WSGI_APPLICATION = 'shiftguard.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'shiftguard'),
-        'USER': os.environ.get('DB_USER', os.environ.get('USER', '')),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', ''),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+# Render/Railway (and most PaaS hosts) provide a single DATABASE_URL rather
+# than separate host/user/password vars - use it when present, otherwise
+# fall back to the individual DB_* vars for local dev (a local Postgres over
+# the Unix socket has no URL of its own).
+if os.environ.get('DATABASE_URL'):
+    DATABASES = {'default': dj_database_url.parse(os.environ['DATABASE_URL'])}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'shiftguard'),
+            'USER': os.environ.get('DB_USER', os.environ.get('USER', '')),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', ''),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
     }
-}
 
 
 # Password validation
@@ -180,9 +192,23 @@ _DEV_FRONTEND_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ]
-CORS_ALLOWED_ORIGINS = _DEV_FRONTEND_ORIGINS
+# FRONTEND_URL: the deployed Vercel URL (e.g. https://shiftguard.vercel.app),
+# set via env var - comma-separate multiple if you add a custom domain later.
+_PROD_FRONTEND_ORIGINS = [
+    o.strip() for o in os.environ.get('FRONTEND_URL', '').split(',') if o.strip()
+]
+CORS_ALLOWED_ORIGINS = _DEV_FRONTEND_ORIGINS + _PROD_FRONTEND_ORIGINS
 CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = _DEV_FRONTEND_ORIGINS
+CSRF_TRUSTED_ORIGINS = _DEV_FRONTEND_ORIGINS + _PROD_FRONTEND_ORIGINS
+
+if not DEBUG:
+    # HTTPS-only cookies and enforced redirects - safe defaults once this is
+    # actually deployed behind HTTPS (both Render and Vercel provide it by
+    # default). Left off in DEBUG so local http://localhost dev still works.
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 LANGUAGE_CODE = 'en-gb'
 
@@ -197,6 +223,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

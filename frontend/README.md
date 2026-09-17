@@ -40,6 +40,20 @@ README's "Accounts" section for registration and Google sign-in setup.
 - `src/pages/Landing.tsx` — the public marketing home
 - `src/styles/theme.css` — the same dark palette/tokens as the Django templates, so this reads as a continuation of the same product
 
+## PWA (installable on iOS/Android)
+
+`vite-plugin-pwa` (configured in `vite.config.ts`) generates the manifest and
+service worker at build time - nothing to run manually, `npm run build`
+produces `dist/manifest.webmanifest`, `dist/sw.js`. Icons are in
+`public/icons/` - currently a plain placeholder ("SG" monogram, generated
+with Pillow since there's no real logo yet); swap those four PNGs for real
+branding whenever you have one, same filenames. Only precaches the app shell
+(JS/CSS/HTML/icons) - API responses are per-user and session-sensitive, so
+they're deliberately never cached by the service worker. See the root
+README's "Installing on iOS" section for the actual install steps once
+deployed - `npm run dev` does not register the service worker (only
+production builds do), so this can't be tested via the dev server.
+
 ## Routing
 
 `/` is public: a signed-out visitor sees the landing page, a signed-in one is
