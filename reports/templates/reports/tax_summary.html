@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Tax summary · ShiftGuard{% endblock %}
+{% block content %}
+<h1>Tax summary &mdash; {{ summary.label }}</h1>
+
+<div class="row-actions" style="margin-bottom: 1rem;">
+    <a href="?year={{ prev_year }}">&laquo; {{ prev_label }}</a>
+    <a href="?year={{ next_year }}">{{ next_label }} &raquo;</a>
+    <a class="btn secondary" href="{% url 'reports:tax-summary-csv' %}?year={{ summary.start_year }}">Export CSV</a>
+    <a class="btn secondary" href="{% url 'reports:tax-summary-pdf' %}?year={{ summary.start_year }}">Export PDF</a>
+</div>
+
+<div class="stat-row">
+    <div class="stat">
+        <div class="value">£{{ summary.ytd.self_employed_income }}</div>
+        <div class="label">YTD self-employed income</div>
+    </div>
+    <div class="stat">
+        <div class="value">£{{ summary.ytd.expenses_total }}</div>
+        <div class="label">YTD expenses</div>
+    </div>
+    <div class="stat">
+        <div class="value">£{{ summary.ytd.self_employed_net }}</div>
+        <div class="label">YTD self-employed net</div>
+    </div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Quarter</th>
+            <th>PAYE income</th>
+            <th>Self-employed income</th>
+            <th>Self-employed expenses</th>
+            <th>Self-employed net</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in summary.rows %}
+        <tr {% if row.is_future %}style="opacity: 0.5;"{% endif %}>
+            <td>{{ row.label }}</td>
+            <td>£{{ row.paye_income }}</td>
+            <td>£{{ row.self_employed_income }}</td>
+            <td>£{{ row.self_employed_expenses }}</td>
+            <td>£{{ row.self_employed_net }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <th>Tax year total</th>
+            <th>£{{ summary.totals.paye_income }}</th>
+            <th>£{{ summary.totals.self_employed_income }}</th>
+            <th>£{{ summary.totals.self_employed_expenses }}</th>
+            <th>£{{ summary.totals.self_employed_net }}</th>
+        </tr>
+    </tfoot>
+</table>
+{% endblock %}

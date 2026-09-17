@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'agencies',
     'shifts',
     'licences',
+    'expenses',
+    'reports',
     'dashboard',
 ]
 

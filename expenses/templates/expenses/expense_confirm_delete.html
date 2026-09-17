@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Delete expense · ShiftGuard{% endblock %}
+{% block content %}
+<h1>Delete "{{ object.get_category_display }} £{{ object.amount }}" on {{ object.date }}?</h1>
+<form method="post">
+    {% csrf_token %}
+    <button class="btn danger" type="submit">Delete</button>
+    <a class="btn secondary" href="{% url 'expenses:list' %}">Cancel</a>
+</form>
+{% endblock %}
