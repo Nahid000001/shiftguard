@@ -28,10 +28,16 @@ load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure--+waus9@0qs8#)@9(s@lb#%6p9orw4n2jxck(8+7urrgfs(u_w'
+# The fallback is Django's own auto-generated dev-only placeholder (hence
+# "django-insecure-") - fine to keep in source since it's never meant for
+# anything but a local checkout with DEBUG=True. Set SECRET_KEY in .env for
+# a real deployment.
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY', 'django-insecure--+waus9@0qs8#)@9(s@lb#%6p9orw4n2jxck(8+7urrgfs(u_w'
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'true').lower() == 'true'
 
 ALLOWED_HOSTS = []
 
