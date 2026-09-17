@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'django_htmx',
     'agencies',
     'shifts',
@@ -50,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -129,6 +131,21 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+# A React dev server (Vite on :5173, or a CRA-style server on :3000) runs on a
+# different port than Django, which is cross-origin even on localhost - these
+# let it send/receive the session cookie and pass Django's CSRF origin check.
+# Session auth (not token auth) is the deliberate choice: the frontend reads
+# the csrftoken cookie and sends it back as X-CSRFToken on unsafe methods.
+_DEV_FRONTEND_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
+CORS_ALLOWED_ORIGINS = _DEV_FRONTEND_ORIGINS
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = _DEV_FRONTEND_ORIGINS
 
 LANGUAGE_CODE = 'en-gb'
 

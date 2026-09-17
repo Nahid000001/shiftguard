@@ -4,8 +4,10 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from agencies.api import AgencyViewSet, SiteViewSet
+from dashboard.api import charts_data_api, dashboard_summary_api
 from expenses.api import ExpenseViewSet
 from licences.api import LicenceViewSet
+from reports.api import tax_summary_api
 from shifts.api import ShiftViewSet
 
 router = DefaultRouter()
@@ -20,6 +22,9 @@ urlpatterns = [
     path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('api/', include(router.urls)),
+    path('api/dashboard/summary/', dashboard_summary_api, name='api-dashboard-summary'),
+    path('api/dashboard/charts/', charts_data_api, name='api-dashboard-charts'),
+    path('api/reports/tax-summary/', tax_summary_api, name='api-tax-summary'),
     path('', include('dashboard.urls')),
     path('agencies/', include('agencies.urls')),
     path('shifts/', include('shifts.urls')),

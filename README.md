@@ -38,6 +38,25 @@ source venv/bin/activate
 python manage.py test
 ```
 
+## API for a future frontend
+
+Every app's CRUD is on the DRF router under `/api/` (agencies, sites, shifts,
+licences, expenses). The data views that were Django-template-only now also
+have JSON endpoints, so a separate frontend has everything it needs:
+
+- `GET /api/dashboard/summary/` — week/month totals, this week's shifts, upcoming licence expiries
+- `GET /api/dashboard/charts/` — earnings trend, hours by agency, pay by site
+- `GET /api/reports/tax-summary/?year=2026` — UK tax-quarter breakdown (same data as the CSV/PDF export)
+
+All of it requires the Django session cookie (`IsAuthenticated` + `SessionAuthentication`
+by default) — log in via `/accounts/login/` first. CORS is configured for a
+React dev server on `localhost:5173` (Vite) or `:3000`, with credentials
+allowed, so `fetch(url, {credentials: 'include'})` from a separately-run
+frontend will carry the session cookie. For unsafe methods (POST/PUT/DELETE)
+the frontend needs to read the `csrftoken` cookie and send it back as the
+`X-CSRFToken` header — see `CSRF_TRUSTED_ORIGINS` in `shiftguard/settings.py`
+if you add another dev server port.
+
 ## App structure
 
 - `agencies` — Agency, Site

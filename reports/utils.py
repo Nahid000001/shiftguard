@@ -16,6 +16,13 @@ def tax_year_label(start_year):
     return f"{start_year}/{str(start_year + 1)[-2:]}"
 
 
+def parse_start_year(request):
+    year = request.GET.get("year")
+    if year and year.isdigit():
+        return int(year)
+    return tax_year_start_year()
+
+
 def tax_quarters(start_year):
     """Return the four UK tax quarters for the tax year beginning `start_year`.
 

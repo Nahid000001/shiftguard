@@ -6,14 +6,7 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from .services import build_tax_summary
-from .utils import tax_year_label, tax_year_start_year
-
-
-def _requested_start_year(request):
-    year = request.GET.get("year")
-    if year and year.isdigit():
-        return int(year)
-    return tax_year_start_year()
+from .utils import parse_start_year, tax_year_label
 
 
 class TaxSummaryView(LoginRequiredMixin, TemplateView):
@@ -21,7 +14,7 @@ class TaxSummaryView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        start_year = _requested_start_year(self.request)
+        start_year = parse_start_year(self.request)
         context["summary"] = build_tax_summary(start_year)
         context["prev_year"] = start_year - 1
         context["prev_label"] = tax_year_label(start_year - 1)
@@ -32,7 +25,7 @@ class TaxSummaryView(LoginRequiredMixin, TemplateView):
 
 class TaxSummaryCSVView(LoginRequiredMixin, View):
     def get(self, request):
-        start_year = _requested_start_year(request)
+        start_year = parse_start_year(request)
         summary = build_tax_summary(start_year)
 
         response = HttpResponse(content_type="text/csv")
@@ -80,7 +73,7 @@ class TaxSummaryPDFView(LoginRequiredMixin, View):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.styles import getSampleStyleSheet
 
-        start_year = _requested_start_year(request)
+        start_year = parse_start_year(request)
         summary = build_tax_summary(start_year)
 
         response = HttpResponse(content_type="application/pdf")
