@@ -5,14 +5,16 @@ Multi-agency security shift, pay, and SIA licence tracker. See
 
 ## Stack
 
-Django + Django REST Framework, server-rendered templates + htmx (no Node/build
-step for the app itself — Node is installed for future Phase 3 tooling but the
-frontend hasn't migrated to React yet), PostgreSQL 16 via Homebrew.
+Django + Django REST Framework backend, PostgreSQL 16, React + TypeScript
+frontend (Vite) in `frontend/`. The backend also still serves a full
+Django-templates+htmx UI (Phase 1/2 fallback, kept working) — see "Two
+frontends" below.
 
 ## Setup
 
 Requires Homebrew, Node, and PostgreSQL (`brew install node postgresql@16`).
 
+Backend:
 ```bash
 brew services start postgresql@16   # if not already running
 createdb shiftguard                 # first run only
@@ -25,9 +27,27 @@ python manage.py createsuperuser   # first run only
 python manage.py runserver
 ```
 
+Frontend (separate terminal, needs the backend running):
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Then open http://localhost:5173/ (the React app) or http://127.0.0.1:8000/
+(the Django-templates version) — both work against the same backend/database.
+
 Database connection defaults to a local Postgres over the Unix socket as your
 OS user (`DB_NAME`/`DB_USER`/`DB_PASSWORD`/`DB_HOST`/`DB_PORT` env vars
 override this — see `shiftguard/settings.py`).
+
+## Two frontends
+
+The React SPA in `frontend/` is now the primary frontend (Phase 3 of the
+spec). The original Django-templates+htmx UI is still there and still fully
+functional/tested (27+ backend tests cover it) — it wasn't deleted, since
+deleting a working, tested UI wasn't something to do unilaterally. Whether to
+retire it is an open decision, not a default.
 
 Then open http://127.0.0.1:8000/ and sign in.
 
@@ -38,24 +58,26 @@ source venv/bin/activate
 python manage.py test
 ```
 
-## API for a future frontend
+## API (used by the React frontend)
 
 Every app's CRUD is on the DRF router under `/api/` (agencies, sites, shifts,
-licences, expenses). The data views that were Django-template-only now also
-have JSON endpoints, so a separate frontend has everything it needs:
+licences, expenses), paginated and filterable (date range on shifts/expenses).
+Plus:
 
 - `GET /api/dashboard/summary/` — week/month totals, this week's shifts, upcoming licence expiries
 - `GET /api/dashboard/charts/` — earnings trend, hours by agency, pay by site
 - `GET /api/reports/tax-summary/?year=2026` — UK tax-quarter breakdown (same data as the CSV/PDF export)
+- `GET /api/auth/csrf/`, `POST /api/auth/login/`, `POST /api/auth/logout/`, `GET /api/auth/me/` — session-cookie auth for a JS frontend (not token auth)
 
-All of it requires the Django session cookie (`IsAuthenticated` + `SessionAuthentication`
-by default) — log in via `/accounts/login/` first. CORS is configured for a
-React dev server on `localhost:5173` (Vite) or `:3000`, with credentials
-allowed, so `fetch(url, {credentials: 'include'})` from a separately-run
-frontend will carry the session cookie. For unsafe methods (POST/PUT/DELETE)
-the frontend needs to read the `csrftoken` cookie and send it back as the
-`X-CSRFToken` header — see `CSRF_TRUSTED_ORIGINS` in `shiftguard/settings.py`
-if you add another dev server port.
+Everything else requires the Django session cookie (`IsAuthenticated` +
+`SessionAuthentication` by default) — log in via `/api/auth/login/` (or
+`/accounts/login/` for the Django-templates UI) first. CORS is configured for
+a dev frontend on `localhost:5173` (Vite) or `:3000`, with credentials
+allowed, so `fetch(url, {credentials: 'include'})` carries the session
+cookie across ports. For unsafe methods (POST/PUT/DELETE) the frontend reads
+the `csrftoken` cookie and sends it back as the `X-CSRFToken` header — see
+`CSRF_TRUSTED_ORIGINS` in `shiftguard/settings.py` if you add another dev
+server port.
 
 ## App structure
 
@@ -67,6 +89,8 @@ if you add another dev server port.
 - `dashboard` — weekly/monthly overview + charts
 
 DRF API mirrors the same models under `/api/`. Every view requires login.
+
+`frontend/` — the React SPA (see `frontend/README.md`).
 
 ## Environment notes
 
