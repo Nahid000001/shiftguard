@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from agencies.models import Agency, Site
 
@@ -72,7 +73,7 @@ class DuplicateLastShiftTests(TestCase):
         self.assertEqual(response.status_code, 200)
         form = response.context["form"]
         self.assertEqual(form.initial["site"], self.site.id)
-        self.assertEqual(form.initial["date"], date.today())
+        self.assertEqual(form.initial["date"], timezone.localdate())
         self.assertEqual(form.initial["hourly_rate"], Decimal("15.00"))
         self.assertEqual(form.initial["shift_type"], Shift.ShiftType.NIGHT)
 
@@ -80,6 +81,12 @@ class DuplicateLastShiftTests(TestCase):
         response = self.client.get(reverse("shifts:create") + "?duplicate=1")
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("site", response.context["form"].initial)
+
+    def test_plain_new_shift_defaults_date_to_today(self):
+        """Not a duplicate - just opening a fresh "add shift" form should
+        still default the date to today, so most entries need one less step."""
+        response = self.client.get(reverse("shifts:create"))
+        self.assertEqual(response.context["form"].initial["date"], timezone.localdate())
 
     def test_duplicate_ignores_other_users_shifts(self):
         other = User.objects.create_user(username="other", password="testpass123")

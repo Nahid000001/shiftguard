@@ -1,5 +1,6 @@
-from datetime import date
 from decimal import Decimal
+
+from django.utils import timezone
 
 from agencies.models import Agency
 from expenses.models import Expense
@@ -15,7 +16,7 @@ def _sum_pay(shifts):
 def build_tax_summary(user, start_year):
     """Build the PAYE vs self-employed income/expense breakdown for a UK tax year."""
     quarters = tax_quarters(start_year)
-    today = date.today()
+    today = timezone.localdate()
 
     shifts = list(
         Shift.objects.filter(

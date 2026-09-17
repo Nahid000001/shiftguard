@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import type { Shift, ShiftType, Site } from "../../api/types";
+import { todayLocalISODate } from "../../utils/dates";
 
 const SHIFT_TYPES: { value: ShiftType; label: string }[] = [
   { value: "STANDARD", label: "Standard" },
@@ -29,7 +30,11 @@ interface ShiftFormProps {
 export function ShiftForm({ sites, initial, onSubmit, onCancel }: ShiftFormProps) {
   const [values, setValues] = useState<ShiftFormValues>({
     site: initial.site ? String(initial.site) : "",
-    date: initial.date ?? "",
+    // A brand-new shift defaults to today - the common case - rather than
+    // making every entry start by picking a date. Editing or duplicating an
+    // existing shift always has a real initial.date, so this never overrides
+    // those.
+    date: initial.date ?? todayLocalISODate(),
     start_time: initial.start_time?.slice(0, 5) ?? "",
     end_time: initial.end_time?.slice(0, 5) ?? "",
     hourly_rate: initial.hourly_rate ?? "",

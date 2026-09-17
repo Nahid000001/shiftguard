@@ -1,7 +1,6 @@
-from datetime import date
-
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Licence(models.Model):
@@ -20,7 +19,11 @@ class Licence(models.Model):
 
     @property
     def days_until_expiry(self):
-        return (self.expiry_date - date.today()).days
+        # timezone.localdate(), not date.today() - the latter ignores
+        # Django's configured TIME_ZONE entirely and uses the server OS
+        # clock's timezone, which would silently miscalculate this on any
+        # server not set to Europe/London (most cloud hosts default to UTC).
+        return (self.expiry_date - timezone.localdate()).days
 
     @property
     def is_expired(self):

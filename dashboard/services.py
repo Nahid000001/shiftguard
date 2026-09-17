@@ -1,6 +1,8 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
+from django.utils import timezone
+
 from licences.models import Licence
 from shifts.models import Shift
 
@@ -13,7 +15,7 @@ def _add_months(d, months):
 
 
 def build_dashboard_summary(user):
-    today = date.today()
+    today = timezone.localdate()
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
     month_start = today.replace(day=1)
@@ -69,7 +71,7 @@ def _bucket_by_category(totals):
 
 
 def build_charts_data(user):
-    today = date.today()
+    today = timezone.localdate()
     all_shifts = list(
         Shift.objects.filter(site__agency__user=user).select_related("site", "site__agency")
     )

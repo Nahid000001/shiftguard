@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { shiftsApi, sitesApi } from "../../api/resources";
 import type { Shift, Site } from "../../api/types";
 import { CrudList } from "../../components/CrudList";
+import { todayLocalISODate } from "../../utils/dates";
 import { ShiftForm } from "./ShiftForm";
 
 export function ShiftsPage() {
@@ -26,7 +27,7 @@ export function ShiftsPage() {
     if (!last) return;
     setDuplicateInitial({
       site: last.site,
-      date: new Date().toISOString().slice(0, 10),
+      date: todayLocalISODate(),
       start_time: last.start_time,
       end_time: last.end_time,
       hourly_rate: last.hourly_rate,

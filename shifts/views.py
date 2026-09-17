@@ -1,8 +1,7 @@
-from datetime import date
-
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from .forms import ShiftForm
@@ -38,6 +37,9 @@ class ShiftCreateView(LoginRequiredMixin, CreateView):
 
     def get_initial(self):
         initial = super().get_initial()
+        # A brand-new shift defaults to today - the common case - rather
+        # than making every entry start by picking a date.
+        initial["date"] = timezone.localdate()
         if self.request.GET.get("duplicate"):
             last_shift = (
                 Shift.objects.filter(site__agency__user=self.request.user)
@@ -48,7 +50,7 @@ class ShiftCreateView(LoginRequiredMixin, CreateView):
                 initial.update(
                     {
                         "site": last_shift.site_id,
-                        "date": date.today(),
+                        "date": timezone.localdate(),
                         "start_time": last_shift.start_time,
                         "end_time": last_shift.end_time,
                         "hourly_rate": last_shift.hourly_rate,

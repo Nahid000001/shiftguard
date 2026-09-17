@@ -1,12 +1,17 @@
 from datetime import date
 
+from django.utils import timezone
+
 
 def tax_year_start_year(for_date=None):
     """The starting calendar year of the UK tax year containing for_date.
 
     The UK tax year runs 6 Apr (year) -> 5 Apr (year+1).
     """
-    for_date = for_date or date.today()
+    # timezone.localdate(), not date.today() - see licences/models.py's
+    # days_until_expiry for why. Getting this wrong could misclassify which
+    # UK tax quarter "today" falls into near a server-local midnight.
+    for_date = for_date or timezone.localdate()
     if (for_date.month, for_date.day) >= (4, 6):
         return for_date.year
     return for_date.year - 1
