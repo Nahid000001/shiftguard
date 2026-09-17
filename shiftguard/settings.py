@@ -120,6 +120,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
+# "Sign in with Google" (ID-token verification, not the full OAuth
+# authorization-code flow - no client secret needed). Unset until you create
+# an OAuth Client ID in Google Cloud Console - see frontend/README.md.
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard:index'
 LOGOUT_REDIRECT_URL = 'login'

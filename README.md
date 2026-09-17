@@ -45,11 +45,40 @@ override this — see `shiftguard/settings.py`).
 
 The React SPA in `frontend/` is now the primary frontend (Phase 3 of the
 spec). The original Django-templates+htmx UI is still there and still fully
-functional/tested (27+ backend tests cover it) — it wasn't deleted, since
+functional/tested (70+ backend tests cover it) — it wasn't deleted, since
 deleting a working, tested UI wasn't something to do unilaterally. Whether to
 retire it is an open decision, not a default.
 
-Then open http://127.0.0.1:8000/ and sign in.
+## Accounts: multi-user, registration, Google sign-in
+
+This is now a real multi-user app, not a single-operator tool — every
+Agency/Licence/Expense has a direct owner, and Site/Shift ownership derives
+through Agency. Every view and API endpoint is scoped to `request.user`;
+cross-account access (viewing, editing, or attaching a record to someone
+else's agency) is rejected, not just hidden — see the isolation tests in each
+app's `tests.py` for exactly what's covered.
+
+New users can self-register three ways, all landing in the same account:
+- `/accounts/register/` (Django-templates UI) or the Register page in the
+  React app — both take username + password
+- `POST /api/auth/register/` directly
+- "Sign in with Google" (see below) — creates an account automatically on
+  first use, matched/created by email, with no local password
+
+**Google sign-in setup** (the one piece that needs your action — creating
+OAuth credentials requires your own Google account, so this can't be done
+for you):
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
+2. Create an OAuth 2.0 Client ID, application type **Web application**
+3. Under "Authorized JavaScript origins" add `http://localhost:5173` (and `http://localhost:8000` if you want the button on the Django-templates login page too)
+4. Copy the generated **Client ID** (looks like `xxxxx.apps.googleusercontent.com`) — no client secret is needed, this uses ID-token verification, not the authorization-code flow
+5. Set it in **two** places (same value, both are safe to be public — the Client ID isn't a secret):
+   - Backend: `GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com` in your shell env before `runserver`
+   - Frontend: create `frontend/.env.local` with `VITE_GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com`
+
+Without this, the "Sign in with Google" button simply doesn't render (checked
+via `if (!clientId) return null`) — everything else works normally.
 
 ## Running tests
 
@@ -67,7 +96,7 @@ Plus:
 - `GET /api/dashboard/summary/` — week/month totals, this week's shifts, upcoming licence expiries
 - `GET /api/dashboard/charts/` — earnings trend, hours by agency, pay by site
 - `GET /api/reports/tax-summary/?year=2026` — UK tax-quarter breakdown (same data as the CSV/PDF export)
-- `GET /api/auth/csrf/`, `POST /api/auth/login/`, `POST /api/auth/logout/`, `GET /api/auth/me/` — session-cookie auth for a JS frontend (not token auth)
+- `GET /api/auth/csrf/`, `POST /api/auth/login/`, `POST /api/auth/register/`, `POST /api/auth/google/`, `POST /api/auth/logout/`, `GET /api/auth/me/` — session-cookie auth for a JS frontend (not token auth)
 
 Everything else requires the Django session cookie (`IsAuthenticated` +
 `SessionAuthentication` by default) — log in via `/api/auth/login/` (or
@@ -96,8 +125,8 @@ DRF API mirrors the same models under `/api/`. Every view requires login.
 
 Originally built on a machine with no Homebrew, Node, or PostgreSQL — hence
 Django templates + htmx + SQLite as the Phase 1 fallback the spec explicitly
-allows. Homebrew, Node, and PostgreSQL 16 are now installed and the app runs
-on Postgres. The frontend is still Django templates + htmx, not React —
-that migration is the one piece of Phase 3 still open. The `dataviz` skill's
-`validate_palette.js` for the Charts page can now be run directly (Node is
-installed) if the palette or chart surface color ever changes.
+allows. Homebrew, Node, and PostgreSQL 16 are now installed, the app runs on
+Postgres, and the React frontend (Phase 3) is built — see "Two frontends"
+above. The `dataviz` skill's `validate_palette.js` for the Charts page can be
+run directly (Node is installed) if the palette or chart surface color ever
+changes.

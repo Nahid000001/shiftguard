@@ -1,42 +1,42 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
 import { PasswordInput } from "../components/PasswordInput";
 
-export function Login() {
-  const { username, loading, login, setAuthenticatedUsername } = useAuth();
+interface FieldErrors {
+  username?: string[];
+  password?: string[];
+  detail?: string;
+}
+
+export function Register() {
+  const { username: loggedInAs, loading, register, setAuthenticatedUsername } = useAuth();
   const [usernameInput, setUsernameInput] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
 
-  if (!loading && username) {
-    const from = (location.state as { from?: string })?.from ?? "/";
-    return <Navigate to={from} replace />;
+  if (!loading && loggedInAs) {
+    return <Navigate to="/" replace />;
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null);
+    setErrors({});
     setSubmitting(true);
     try {
-      await login(usernameInput, password);
+      await register(usernameInput, password, email || undefined);
       navigate("/", { replace: true });
     } catch (err) {
-      if (err instanceof ApiError && err.status === 400) {
-        setError("Invalid username or password.");
-      } else if (err instanceof ApiError) {
-        // Anything other than a real "wrong credentials" response (CSRF
-        // failure, network error, misconfigured API host, ...) - don't lie
-        // and call it a bad password when it might not be.
-        setError(`Sign-in failed (${err.status}): ${err.message}`);
+      if (err instanceof ApiError && err.body && typeof err.body === "object") {
+        setErrors(err.body as FieldErrors);
       } else {
-        setError("Could not reach the server.");
+        setErrors({ detail: "Could not reach the server." });
       }
     } finally {
       setSubmitting(false);
@@ -46,9 +46,9 @@ export function Login() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <h1>ShiftGuard</h1>
+        <h1>Create an account</h1>
         <form onSubmit={handleSubmit}>
-          {error && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</p>}
+          {errors.detail && <p style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{errors.detail}</p>}
           <div className="field">
             <label htmlFor="username">Username</label>
             <input
@@ -58,19 +58,27 @@ export function Login() {
               autoFocus
               required
             />
+            {errors.username?.map((msg) => (
+              <p key={msg} style={{ color: "var(--danger)", fontSize: "0.8rem", margin: "0.25rem 0 0" }}>
+                {msg}
+              </p>
+            ))}
+          </div>
+          <div className="field">
+            <label htmlFor="email">Email (optional)</label>
+            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="field">
             <label htmlFor="password">Password</label>
-            <PasswordInput
-              id="password"
-              value={password}
-              onChange={setPassword}
-              autoComplete="current-password"
-              required
-            />
+            <PasswordInput id="password" value={password} onChange={setPassword} autoComplete="new-password" required />
+            {errors.password?.map((msg) => (
+              <p key={msg} style={{ color: "var(--danger)", fontSize: "0.8rem", margin: "0.25rem 0 0" }}>
+                {msg}
+              </p>
+            ))}
           </div>
           <button type="submit" className="btn" style={{ width: "100%" }} disabled={submitting}>
-            {submitting ? "Signing in…" : "Sign in"}
+            {submitting ? "Creating account…" : "Create account"}
           </button>
         </form>
         <div style={{ margin: "1rem 0", display: "flex", justifyContent: "center" }}>
@@ -79,11 +87,11 @@ export function Login() {
               setAuthenticatedUsername(u);
               navigate("/", { replace: true });
             }}
-            onError={setError}
+            onError={(msg) => setErrors({ detail: msg })}
           />
         </div>
         <p style={{ marginTop: "1rem", textAlign: "center", fontSize: "0.85rem", color: "var(--muted)" }}>
-          Don't have an account? <Link to="/register">Register</Link>
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </div>
     </div>

@@ -6,7 +6,11 @@ interface AuthState {
   username: string | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string, email?: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** For a login completed elsewhere (e.g. the Google button already set the
+   * session cookie itself) - just syncs local state to match. */
+  setAuthenticatedUsername: (username: string) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -36,14 +40,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const register = useCallback(async (usernameInput: string, password: string, email?: string) => {
+    try {
+      const res = await api.post<{ username: string }>("/api/auth/register/", {
+        username: usernameInput,
+        password,
+        email,
+      });
+      setUsername(res.username);
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      throw new ApiError(0, { detail: "Could not reach the server." });
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     await api.post("/api/auth/logout/");
     setUsername(null);
   }, []);
 
   const value = useMemo(
-    () => ({ username, loading, login, logout }),
-    [username, loading, login, logout],
+    () => ({ username, loading, login, register, logout, setAuthenticatedUsername: setUsername }),
+    [username, loading, login, register, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

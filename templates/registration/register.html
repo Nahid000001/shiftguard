@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign in · ShiftGuard</title>
+    <title>Register · ShiftGuard</title>
     <style>
         :root { --bg: #0f172a; --panel: #1e293b; --border: #334155; --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8; --danger: #f87171; }
         * { box-sizing: border-box; }
@@ -11,35 +11,46 @@
         .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 2rem; width: 100%; max-width: 340px; }
         h1 { font-size: 1.3rem; margin: 0 0 1.25rem; color: var(--accent); }
         label { display: block; margin-bottom: 0.25rem; color: var(--muted); font-size: 0.85rem; }
-        input { width: 100%; padding: 0.55rem; border-radius: 6px; border: 1px solid var(--border); background: #0b1220; color: var(--text); margin-bottom: 1rem; }
+        input { width: 100%; padding: 0.55rem; border-radius: 6px; border: 1px solid var(--border); background: #0b1220; color: var(--text); margin-bottom: 0.25rem; }
+        .help-text { color: var(--muted); font-size: 0.75rem; margin: 0 0 1rem; }
         .password-field { position: relative; }
-        .password-field input { padding-right: 3.2rem; }
+        .password-field input { padding-right: 3.2rem; margin-bottom: 0; }
         .toggle-password { position: absolute; right: 0.4rem; top: 0.4rem; background: none; border: none; color: var(--muted); font-size: 0.75rem; font-weight: 600; cursor: pointer; padding: 0.3rem 0.5rem; }
         .toggle-password:hover { color: var(--accent); }
-        button[type="submit"] { width: 100%; background: var(--accent); color: #0f172a; border: none; padding: 0.6rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
-        .errorlist { color: var(--danger); list-style: none; padding: 0; font-size: 0.85rem; }
+        button[type="submit"] { width: 100%; background: var(--accent); color: #0f172a; border: none; padding: 0.6rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 0.5rem; }
+        .errorlist { color: var(--danger); list-style: none; padding: 0; font-size: 0.85rem; margin: 0 0 0.5rem; }
         .switch-link { margin-top: 1rem; text-align: center; font-size: 0.85rem; color: var(--muted); }
         .switch-link a { color: var(--accent); }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>ShiftGuard</h1>
+        <h1>Create an account</h1>
         <form method="post">
             {% csrf_token %}
             {{ form.non_field_errors }}
-            <label for="id_username">Username</label>
+            <label for="{{ form.username.id_for_label }}">Username</label>
             {{ form.username }}
             {{ form.username.errors }}
-            <label for="id_password">Password</label>
+
+            <label for="{{ form.password1.id_for_label }}">Password</label>
             <div class="password-field">
-                {{ form.password }}
-                <button type="button" class="toggle-password" data-target="id_password">Show</button>
+                {{ form.password1 }}
+                <button type="button" class="toggle-password" data-target="{{ form.password1.id_for_label }}">Show</button>
             </div>
-            {{ form.password.errors }}
-            <button type="submit">Sign in</button>
+            {{ form.password1.errors }}
+            <p class="help-text">At least 8 characters, not too common or similar to your username.</p>
+
+            <label for="{{ form.password2.id_for_label }}">Confirm password</label>
+            <div class="password-field">
+                {{ form.password2 }}
+                <button type="button" class="toggle-password" data-target="{{ form.password2.id_for_label }}">Show</button>
+            </div>
+            {{ form.password2.errors }}
+
+            <button type="submit">Create account</button>
         </form>
-        <div class="switch-link">Don't have an account? <a href="{% url 'register' %}">Register</a></div>
+        <div class="switch-link">Already have an account? <a href="{% url 'login' %}">Sign in</a></div>
     </div>
     <script>
         document.querySelectorAll(".toggle-password").forEach(function (btn) {

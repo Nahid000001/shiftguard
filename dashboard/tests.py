@@ -1,7 +1,7 @@
 from datetime import date, time
 
 from django.contrib.auth.models import User
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from agencies.models import Agency, Site
@@ -52,7 +52,9 @@ class DashboardAndChartsAPITests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="tester", password="testpass123")
         self.client.force_login(self.user)
-        agency = Agency.objects.create(name="Mitie", employment_type=Agency.EmploymentType.PAYE)
+        agency = Agency.objects.create(
+            user=self.user, name="Mitie", employment_type=Agency.EmploymentType.PAYE
+        )
         self.site = Site.objects.create(agency=agency, name="BNY Mellon")
         Shift.objects.create(
             site=self.site, date=date.today(), start_time=time(9, 0), end_time=time(17, 0),
@@ -153,3 +155,105 @@ class AuthAPITests(TestCase):
 
         me_response = self.client.get(reverse("api-auth-me"))
         self.assertEqual(me_response.status_code, 403)
+
+    def test_register_without_csrf_token_is_rejected(self):
+        response = self.client.post(
+            reverse("api-auth-register"),
+            {"username": "newuser", "password": "a-fairly-unusual-pw-1"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_register_creates_and_logs_in_a_new_user(self):
+        token = self._csrf_token()
+        response = self.client.post(
+            reverse("api-auth-register"),
+            {"username": "newuser", "email": "new@example.com", "password": "a-fairly-unusual-pw-1"},
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["username"], "newuser")
+        self.assertTrue(User.objects.filter(username="newuser").exists())
+
+        me_response = self.client.get(reverse("api-auth-me"))
+        self.assertEqual(me_response.status_code, 200)
+        self.assertEqual(me_response.json()["username"], "newuser")
+
+    def test_register_rejects_a_taken_username(self):
+        token = self._csrf_token()
+        response = self.client.post(
+            reverse("api-auth-register"),
+            {"username": "tester", "password": "a-fairly-unusual-pw-1"},
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("username", response.json())
+
+    def test_register_rejects_a_weak_password(self):
+        token = self._csrf_token()
+        response = self.client.post(
+            reverse("api-auth-register"),
+            {"username": "newuser2", "password": "password"},
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("password", response.json())
+
+
+class GoogleSignInTests(TestCase):
+    """Can't fully exercise this without a real Google-issued ID token and a
+    configured Client ID - these cover what's testable without either:
+    config gating, CSRF protection, and malformed-token rejection."""
+
+    def _csrf_token(self):
+        client = Client(enforce_csrf_checks=True)
+        client.get(reverse("api-auth-csrf"))
+        return client, client.cookies["csrftoken"].value
+
+    def test_without_csrf_token_is_rejected(self):
+        client = Client(enforce_csrf_checks=True)
+        response = client.post(reverse("api-auth-google"), {"credential": "whatever"})
+        self.assertEqual(response.status_code, 403)
+
+    @override_settings(GOOGLE_CLIENT_ID="")
+    def test_unconfigured_server_returns_503(self):
+        client, token = self._csrf_token()
+        response = client.post(
+            reverse("api-auth-google"), {"credential": "whatever"}, HTTP_X_CSRFTOKEN=token
+        )
+        self.assertEqual(response.status_code, 503)
+
+    @override_settings(GOOGLE_CLIENT_ID="fake-client-id.apps.googleusercontent.com")
+    def test_malformed_credential_is_rejected(self):
+        client, token = self._csrf_token()
+        response = client.post(
+            reverse("api-auth-google"), {"credential": "not-a-real-jwt"}, HTTP_X_CSRFTOKEN=token
+        )
+        self.assertEqual(response.status_code, 400)
+
+    @override_settings(GOOGLE_CLIENT_ID="fake-client-id.apps.googleusercontent.com")
+    def test_missing_credential_is_rejected(self):
+        client, token = self._csrf_token()
+        response = client.post(reverse("api-auth-google"), {}, HTTP_X_CSRFTOKEN=token)
+        self.assertEqual(response.status_code, 400)
+
+
+class TemplateRegistrationTests(TestCase):
+    def test_register_page_loads(self):
+        response = self.client.get(reverse("register"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_register_creates_and_logs_in_a_user(self):
+        response = self.client.post(
+            reverse("register"),
+            {
+                "username": "templateuser",
+                "password1": "a-fairly-unusual-pw-1",
+                "password2": "a-fairly-unusual-pw-1",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(User.objects.filter(username="templateuser").exists())
+
+        # Session is authenticated post-registration - dashboard loads, not a redirect.
+        dashboard_response = self.client.get(reverse("dashboard:index"))
+        self.assertEqual(dashboard_response.status_code, 200)

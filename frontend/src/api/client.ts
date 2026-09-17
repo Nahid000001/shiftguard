@@ -1,4 +1,10 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+// Must share a hostname with whatever origin the frontend itself is served
+// from (both "localhost", or both "127.0.0.1") - browsers treat those two
+// hostnames as different *sites* even on the same machine, so a SameSite=Lax
+// cookie (the CSRF cookie) set for one is silently refused on a cross-site
+// fetch to the other. curl doesn't enforce this, so testing with curl alone
+// can't catch it - it only shows up in a real browser.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 export class ApiError extends Error {
   status: number;

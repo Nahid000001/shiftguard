@@ -12,23 +12,31 @@ npm install
 npm run dev
 ```
 
-Requires the Django backend running separately (`python manage.py runserver`
-in the parent directory) — see the root README. The dev server runs at
-http://localhost:5173/ and talks to Django at `http://127.0.0.1:8000` by
-default (override with a `VITE_API_BASE_URL` env var if needed).
+Requires the Django backend running separately (`python manage.py runserver
+localhost:8000` in the parent directory) — see the root README. The dev
+server runs at http://localhost:5173/ and talks to Django at
+`http://localhost:8000` by default (override with a `VITE_API_BASE_URL` env
+var if needed). **Use `localhost` for both, not a mix with `127.0.0.1`** —
+browsers treat those as different *sites*, so a SameSite=Lax cookie (the CSRF
+cookie) set for one is silently refused on a cross-site fetch to the other.
+This isn't a hypothetical: it's exactly what broke login the first time this
+was tested in a real browser (curl-based testing didn't catch it, since curl
+doesn't enforce SameSite).
 
 Auth is session-cookie based, shared with the Django backend: the app calls
-`/api/auth/csrf/` to get a CSRF cookie, then `/api/auth/login/` with that
-token, exactly like a same-origin form post would. `credentials: 'include'`
-is set on every request so the session cookie round-trips despite the
-frontend and backend being on different ports.
+`/api/auth/csrf/` to get a CSRF cookie, then `/api/auth/login/` (or
+`/api/auth/register/`, or `/api/auth/google/`) with that token, exactly like
+a same-origin form post would. `credentials: 'include'` is set on every
+request so the session cookie round-trips despite the frontend and backend
+being on different ports. Every account's data is isolated - see the root
+README's "Accounts" section for registration and Google sign-in setup.
 
 ## Structure
 
 - `src/api/` — typed fetch client (`client.ts`) and per-resource functions (`resources.ts`)
-- `src/auth/` — `AuthContext` (login/logout/session state)
-- `src/components/` — shared `Layout`, `ProtectedRoute`, and the generic `CrudList`/`CrudForm` used by Agencies/Sites/Licences/Expenses
-- `src/pages/` — one folder per feature; Shifts has a bespoke form (site-rate autofill, duplicate-last-shift) instead of the generic one
+- `src/auth/` — `AuthContext` (login/register/logout/session state)
+- `src/components/` — shared `Layout`, `ProtectedRoute`, `PasswordInput` (show/hide toggle), `GoogleSignInButton` (renders nothing if `VITE_GOOGLE_CLIENT_ID` isn't set), and the generic `CrudList`/`CrudForm` used by Agencies/Sites/Licences/Expenses
+- `src/pages/` — one folder per feature; Login and Register both offer Google sign-in; Shifts has a bespoke form (site-rate autofill, duplicate-last-shift) instead of the generic one
 - `src/styles/theme.css` — the same dark palette/tokens as the Django templates, so this reads as a continuation of the same product
 
 Tax summary CSV/PDF export are plain links to the Django endpoints
@@ -37,8 +45,10 @@ download, since they're file downloads, not data to render.
 
 ## Verification note
 
-Compiles clean (`npm run build` — TypeScript + Vite), lints clean beyond
-stylistic warnings (`npm run lint`), and every module transforms correctly
-through Vite's dev server. The actual rendered UI has **not** been visually
-verified in a real browser — no browser automation was available in the
-session that built this. Click through it yourself before trusting it fully.
+The core app (login, dashboard, shifts, charts, tax summary, CRUD) has been
+confirmed working end-to-end in a real browser. The newer additions -
+registration page, password show/hide toggle, Google sign-in button - have
+**not** yet been browser-verified, same caveat as before: no browser
+automation was available in the session that built them, only TypeScript
+compiling clean and the backend contracts being tested directly. Click
+through those specifically before trusting them.
