@@ -6,12 +6,17 @@ Multi-agency security shift, pay, and SIA licence tracker. See
 ## Stack
 
 Django + Django REST Framework, server-rendered templates + htmx (no Node/build
-step), SQLite for now. This is a deliberate substitution for the spec's
-React + Postgres plan — see "Environment notes" below.
+step for the app itself — Node is installed for future Phase 3 tooling but the
+frontend hasn't migrated to React yet), PostgreSQL 16 via Homebrew.
 
 ## Setup
 
+Requires Homebrew, Node, and PostgreSQL (`brew install node postgresql@16`).
+
 ```bash
+brew services start postgresql@16   # if not already running
+createdb shiftguard                 # first run only
+
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -19,6 +24,10 @@ python manage.py migrate
 python manage.py createsuperuser   # first run only
 python manage.py runserver
 ```
+
+Database connection defaults to a local Postgres over the Unix socket as your
+OS user (`DB_NAME`/`DB_USER`/`DB_PASSWORD`/`DB_HOST`/`DB_PORT` env vars
+override this — see `shiftguard/settings.py`).
 
 Then open http://127.0.0.1:8000/ and sign in.
 
@@ -42,10 +51,10 @@ DRF API mirrors the same models under `/api/`. Every view requires login.
 
 ## Environment notes
 
-Built on a machine with no Homebrew, Node, or PostgreSQL — only system Python
-3.9 with pip/venv. That's why this is Django templates + htmx + SQLite instead
-of React + Postgres (an explicitly allowed Phase 1 fallback per the spec).
-If you install Node/Postgres later, Phase 3's React/Postgres migration is still
-open. There's also no JS runtime on this machine, so the `dataviz` skill's
-`validate_palette.js` couldn't be run directly for the Charts page — it uses
-the skill's documented, pre-validated dark-mode palette unmodified instead.
+Originally built on a machine with no Homebrew, Node, or PostgreSQL — hence
+Django templates + htmx + SQLite as the Phase 1 fallback the spec explicitly
+allows. Homebrew, Node, and PostgreSQL 16 are now installed and the app runs
+on Postgres. The frontend is still Django templates + htmx, not React —
+that migration is the one piece of Phase 3 still open. The `dataviz` skill's
+`validate_palette.js` for the Charts page can now be run directly (Node is
+installed) if the palette or chart surface color ever changes.
