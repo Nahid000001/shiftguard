@@ -83,6 +83,7 @@ export function Register() {
         </form>
         <div style={{ margin: "1rem 0", display: "flex", justifyContent: "center" }}>
           <GoogleSignInButton
+            text="signup_with"
             onSuccess={(u) => {
               setAuthenticatedUsername(u);
               navigate("/dashboard", { replace: true });

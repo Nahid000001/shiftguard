@@ -41,11 +41,16 @@ function loadGoogleScript(): Promise<void> {
 interface GoogleSignInButtonProps {
   onSuccess: (username: string) => void;
   onError: (message: string) => void;
+  /** Google's button label - "signin_with" (default) renders "Sign in with
+   * Google", "signup_with" renders "Sign up with Google". Purely cosmetic -
+   * the endpoint behaves identically either way (finds-or-creates by email),
+   * but showing "Sign in" on a Register page is confusingly worded. */
+  text?: "signin_with" | "signup_with" | "continue_with" | "signin";
 }
 
 /** Renders nothing if VITE_GOOGLE_CLIENT_ID isn't set, rather than a button
  * that's guaranteed to fail - see frontend/README.md for how to set it up. */
-export function GoogleSignInButton({ onSuccess, onError }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({ onSuccess, onError, text = "signin_with" }: GoogleSignInButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
@@ -73,6 +78,7 @@ export function GoogleSignInButton({ onSuccess, onError }: GoogleSignInButtonPro
           theme: "outline",
           size: "large",
           width: 296,
+          text,
         });
       })
       .catch(() => onError("Could not load Google sign-in."));
@@ -81,7 +87,7 @@ export function GoogleSignInButton({ onSuccess, onError }: GoogleSignInButtonPro
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientId]);
+  }, [clientId, text]);
 
   if (!clientId) return null;
 
