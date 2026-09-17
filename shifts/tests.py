@@ -97,3 +97,29 @@ class SiteDefaultRateAutofillTests(TestCase):
     def test_site_without_default_rate_has_no_data_rate_attribute(self):
         response = self.client.get(reverse("shifts:create"))
         self.assertNotContains(response, f'value="{self.unpriced_site.id}" data-rate')
+
+
+class ShiftAPIFilteringTests(TestCase):
+    def setUp(self):
+        agency = Agency.objects.create(name="Mitie", employment_type=Agency.EmploymentType.PAYE)
+        self.site = Site.objects.create(agency=agency, name="Test Site")
+        for d in [date(2026, 1, 5), date(2026, 2, 10), date(2026, 3, 15)]:
+            Shift.objects.create(
+                site=self.site, date=d, start_time=time(9, 0), end_time=time(17, 0),
+                hourly_rate=Decimal("10.00"),
+            )
+        user = User.objects.create_user(username="tester", password="testpass123")
+        self.client.force_login(user)
+
+    def test_list_is_paginated(self):
+        response = self.client.get("/api/shifts/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("results", data)
+        self.assertEqual(data["count"], 3)
+
+    def test_date_range_filter_narrows_results(self):
+        response = self.client.get("/api/shifts/?date__gte=2026-02-01&date__lte=2026-02-28")
+        data = response.json()
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(data["results"][0]["date"], "2026-02-10")
