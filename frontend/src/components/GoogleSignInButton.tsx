@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, resetCsrfToken } from "../api/client";
 
 // No official type package is pulled in just for this one script's shape.
 declare global {
@@ -68,6 +68,7 @@ export function GoogleSignInButton({ onSuccess, onError, text = "signin_with" }:
               const res = await api.post<{ username: string }>("/api/auth/google/", {
                 credential: response.credential,
               });
+              resetCsrfToken(); // Django rotates the CSRF token on login
               onSuccess(res.username);
             } catch (err) {
               onError(err instanceof ApiError ? err.message : "Google sign-in failed.");

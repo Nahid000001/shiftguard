@@ -21,14 +21,32 @@ export class ApiError extends Error {
   }
 }
 
-function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+// The frontend (Vercel) and backend (Render) are on entirely different
+// domains in production - JS here can never read a cookie set by a
+// different domain via document.cookie, regardless of SameSite (that's a
+// same-origin restriction on cookie *storage*, not a SameSite send-time
+// rule). So the CSRF token is fetched from the response body of
+// /api/auth/csrf/ instead of read back out of the cookie, and kept in
+// memory - it resets on page reload, which just means one extra fetch.
+let csrfTokenPromise: Promise<string> | null = null;
+
+async function fetchCsrfToken(): Promise<string> {
+  const response = await fetch(`${API_BASE}/api/auth/csrf/`, { credentials: "include" });
+  const data = (await response.json()) as { csrfToken: string };
+  return data.csrfToken;
 }
 
-async function ensureCsrfCookie(): Promise<void> {
-  if (getCookie("csrftoken")) return;
-  await fetch(`${API_BASE}/api/auth/csrf/`, { credentials: "include" });
+async function ensureCsrfToken(): Promise<string> {
+  if (!csrfTokenPromise) csrfTokenPromise = fetchCsrfToken();
+  return csrfTokenPromise;
+}
+
+/** Django rotates the CSRF token on login (a security measure against
+ * session fixation), so a cached pre-login token becomes invalid the moment
+ * login succeeds. Call this right after login/register/logout so the next
+ * mutating request fetches a fresh one instead of failing with a stale one. */
+export function resetCsrfToken(): void {
+  csrfTokenPromise = null;
 }
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -38,9 +56,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
 
   if (!SAFE_METHODS.has(method)) {
-    await ensureCsrfCookie();
-    const token = getCookie("csrftoken");
-    if (token) headers.set("X-CSRFToken", token);
+    const token = await ensureCsrfToken();
+    headers.set("X-CSRFToken", token);
   }
   if (options.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
@@ -91,4 +108,4 @@ export async function fetchAllPages<T>(path: string): Promise<T[]> {
   return results;
 }
 
-export { API_BASE, ensureCsrfCookie, getCookie };
+export { API_BASE };

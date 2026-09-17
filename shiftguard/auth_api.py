@@ -37,10 +37,15 @@ def public_post_view(view_func):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def csrf_view(request):
-    """Forces Django to set the csrftoken cookie, so the frontend has a token
-    to send back as X-CSRFToken on the login/register POST that follows."""
-    get_token(request)
-    return Response({"detail": "CSRF cookie set"})
+    """Sets the csrftoken cookie AND hands back its value in the response
+    body. The cookie alone isn't enough for a genuinely cross-site frontend
+    (different domain, not just a different port/localhost) - JS on
+    vercel.app can never read a cookie set by onrender.com via
+    document.cookie, that's blocked by the browser regardless of SameSite.
+    The frontend uses this returned value directly instead of trying (and
+    failing) to read it back out of document.cookie."""
+    token = get_token(request)
+    return Response({"csrfToken": token})
 
 
 @public_post_view

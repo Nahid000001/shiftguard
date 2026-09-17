@@ -210,6 +210,15 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+    # The deployed frontend (Vercel) and backend (Render) are on entirely
+    # different domains, not just different ports like local dev - a genuinely
+    # cross-*site* request, where SameSite=Lax (Django's default) silently
+    # drops the cookie from fetch()/XHR requests entirely (Lax only allows it
+    # for top-level navigation). SameSite=None restores that - it requires
+    # Secure=True, which is already set above.
+    SESSION_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SAMESITE = 'None'
+
 LANGUAGE_CODE = 'en-gb'
 
 TIME_ZONE = 'Europe/London'

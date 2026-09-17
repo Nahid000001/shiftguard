@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, resetCsrfToken } from "../api/client";
 
 interface AuthState {
   username: string | null;
@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username: usernameInput,
         password,
       });
+      resetCsrfToken(); // Django rotates the CSRF token on login
       setUsername(res.username);
     } catch (err) {
       if (err instanceof ApiError) throw err;
@@ -47,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         email,
       });
+      resetCsrfToken(); // Django rotates the CSRF token on login
       setUsername(res.username);
     } catch (err) {
       if (err instanceof ApiError) throw err;
@@ -56,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await api.post("/api/auth/logout/");
+    resetCsrfToken();
     setUsername(null);
   }, []);
 
