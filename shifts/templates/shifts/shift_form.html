@@ -8,4 +8,25 @@
     <button class="btn" type="submit">Save</button>
     <a class="btn secondary" href="{% url 'shifts:list' %}">Cancel</a>
 </form>
+<script>
+(function () {
+    const siteField = document.getElementById("id_site");
+    const rateField = document.getElementById("id_hourly_rate");
+    if (!siteField || !rateField) return;
+
+    rateField.addEventListener("input", function () {
+        rateField.dataset.autofilled = "false";
+    });
+
+    siteField.addEventListener("change", function () {
+        const selected = siteField.options[siteField.selectedIndex];
+        const rate = selected ? selected.dataset.rate : undefined;
+        if (!rate) return;
+        if (rateField.value === "" || rateField.dataset.autofilled === "true") {
+            rateField.value = rate;
+            rateField.dataset.autofilled = "true";
+        }
+    });
+})();
+</script>
 {% endblock %}
