@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -6,6 +7,7 @@ class Agency(models.Model):
         PAYE = "PAYE", "PAYE"
         SELF_EMPLOYED = "SELF_EMPLOYED", "Self-employed"
 
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="agencies")
     name = models.CharField(max_length=200)
     employment_type = models.CharField(
         max_length=20, choices=EmploymentType.choices, default=EmploymentType.PAYE

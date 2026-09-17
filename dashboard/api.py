@@ -9,7 +9,7 @@ from .services import build_charts_data, build_dashboard_summary
 
 @api_view(["GET"])
 def dashboard_summary_api(request):
-    summary = build_dashboard_summary()
+    summary = build_dashboard_summary(request.user)
     return Response(
         {
             "week_start": summary["week_start"],
@@ -24,4 +24,4 @@ def dashboard_summary_api(request):
 
 @api_view(["GET"])
 def charts_data_api(request):
-    return Response(build_charts_data())
+    return Response(build_charts_data(request.user))

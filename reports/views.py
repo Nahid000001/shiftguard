@@ -15,7 +15,7 @@ class TaxSummaryView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         start_year = parse_start_year(self.request)
-        context["summary"] = build_tax_summary(start_year)
+        context["summary"] = build_tax_summary(self.request.user, start_year)
         context["prev_year"] = start_year - 1
         context["prev_label"] = tax_year_label(start_year - 1)
         context["next_year"] = start_year + 1
@@ -26,7 +26,7 @@ class TaxSummaryView(LoginRequiredMixin, TemplateView):
 class TaxSummaryCSVView(LoginRequiredMixin, View):
     def get(self, request):
         start_year = parse_start_year(request)
-        summary = build_tax_summary(start_year)
+        summary = build_tax_summary(self.request.user, start_year)
 
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = (
@@ -74,7 +74,7 @@ class TaxSummaryPDFView(LoginRequiredMixin, View):
         from reportlab.lib.styles import getSampleStyleSheet
 
         start_year = parse_start_year(request)
-        summary = build_tax_summary(start_year)
+        summary = build_tax_summary(self.request.user, start_year)
 
         response = HttpResponse(content_type="application/pdf")
         response["Content-Disposition"] = (

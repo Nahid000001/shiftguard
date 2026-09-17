@@ -8,9 +8,11 @@ from .models import Agency, Site
 
 
 class AgencyListView(LoginRequiredMixin, ListView):
-    model = Agency
     template_name = "agencies/agency_list.html"
     context_object_name = "agencies"
+
+    def get_queryset(self):
+        return Agency.objects.filter(user=self.request.user)
 
 
 class AgencyCreateView(LoginRequiredMixin, CreateView):
@@ -20,30 +22,34 @@ class AgencyCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy("agencies:agency-list")
 
     def form_valid(self, form):
+        form.instance.user = self.request.user
         messages.success(self.request, f"Added agency {form.instance.name}.")
         return super().form_valid(form)
 
 
 class AgencyUpdateView(LoginRequiredMixin, UpdateView):
-    model = Agency
     form_class = AgencyForm
     template_name = "agencies/agency_form.html"
     success_url = reverse_lazy("agencies:agency-list")
 
+    def get_queryset(self):
+        return Agency.objects.filter(user=self.request.user)
+
 
 class AgencyDeleteView(LoginRequiredMixin, DeleteView):
-    model = Agency
     template_name = "agencies/agency_confirm_delete.html"
     success_url = reverse_lazy("agencies:agency-list")
 
+    def get_queryset(self):
+        return Agency.objects.filter(user=self.request.user)
+
 
 class SiteListView(LoginRequiredMixin, ListView):
-    model = Site
     template_name = "agencies/site_list.html"
     context_object_name = "sites"
 
     def get_queryset(self):
-        return Site.objects.select_related("agency").all()
+        return Site.objects.filter(agency__user=self.request.user).select_related("agency")
 
 
 class SiteCreateView(LoginRequiredMixin, CreateView):
@@ -52,19 +58,33 @@ class SiteCreateView(LoginRequiredMixin, CreateView):
     template_name = "agencies/site_form.html"
     success_url = reverse_lazy("agencies:site-list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         messages.success(self.request, f"Added site {form.instance.name}.")
         return super().form_valid(form)
 
 
 class SiteUpdateView(LoginRequiredMixin, UpdateView):
-    model = Site
     form_class = SiteForm
     template_name = "agencies/site_form.html"
     success_url = reverse_lazy("agencies:site-list")
 
+    def get_queryset(self):
+        return Site.objects.filter(agency__user=self.request.user)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
 
 class SiteDeleteView(LoginRequiredMixin, DeleteView):
-    model = Site
     template_name = "agencies/site_confirm_delete.html"
     success_url = reverse_lazy("agencies:site-list")
+
+    def get_queryset(self):
+        return Site.objects.filter(agency__user=self.request.user)

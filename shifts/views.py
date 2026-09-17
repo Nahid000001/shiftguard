@@ -10,17 +10,18 @@ from .models import Shift
 
 
 class ShiftListView(LoginRequiredMixin, ListView):
-    model = Shift
     template_name = "shifts/shift_list.html"
     context_object_name = "shifts"
     paginate_by = 30
 
     def get_queryset(self):
-        return Shift.objects.select_related("site", "site__agency").all()
+        return Shift.objects.filter(site__agency__user=self.request.user).select_related(
+            "site", "site__agency"
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["has_shifts"] = Shift.objects.exists()
+        context["has_shifts"] = Shift.objects.filter(site__agency__user=self.request.user).exists()
         return context
 
 
@@ -30,10 +31,19 @@ class ShiftCreateView(LoginRequiredMixin, CreateView):
     template_name = "shifts/shift_form.html"
     success_url = reverse_lazy("shifts:list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def get_initial(self):
         initial = super().get_initial()
         if self.request.GET.get("duplicate"):
-            last_shift = Shift.objects.select_related("site").first()
+            last_shift = (
+                Shift.objects.filter(site__agency__user=self.request.user)
+                .select_related("site")
+                .first()
+            )
             if last_shift:
                 initial.update(
                     {
@@ -53,13 +63,22 @@ class ShiftCreateView(LoginRequiredMixin, CreateView):
 
 
 class ShiftUpdateView(LoginRequiredMixin, UpdateView):
-    model = Shift
     form_class = ShiftForm
     template_name = "shifts/shift_form.html"
     success_url = reverse_lazy("shifts:list")
 
+    def get_queryset(self):
+        return Shift.objects.filter(site__agency__user=self.request.user)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
 
 class ShiftDeleteView(LoginRequiredMixin, DeleteView):
-    model = Shift
     template_name = "shifts/shift_confirm_delete.html"
     success_url = reverse_lazy("shifts:list")
+
+    def get_queryset(self):
+        return Shift.objects.filter(site__agency__user=self.request.user)

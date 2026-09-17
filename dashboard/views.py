@@ -9,7 +9,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(build_dashboard_summary())
+        context.update(build_dashboard_summary(self.request.user))
         return context
 
 
@@ -18,5 +18,5 @@ class ChartsView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(build_charts_data())
+        context.update(build_charts_data(self.request.user))
         return context

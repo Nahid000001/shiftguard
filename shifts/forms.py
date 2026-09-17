@@ -1,5 +1,7 @@
 from django import forms
 
+from agencies.models import Site
+
 from .models import Shift
 
 
@@ -32,3 +34,8 @@ class ShiftForm(forms.ModelForm):
             "end_time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
             "notes": forms.Textarea(attrs={"rows": 2}),
         }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            self.fields["site"].queryset = Site.objects.filter(agency__user=user)

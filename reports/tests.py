@@ -1,6 +1,7 @@
 from datetime import date, time
 from decimal import Decimal
 
+from django.contrib.auth.models import User
 from django.test import TestCase
 
 from agencies.models import Agency, Site
@@ -31,9 +32,12 @@ class TaxYearBoundaryTests(TestCase):
 
 class TaxSummaryServiceTests(TestCase):
     def setUp(self):
-        self.mitie = Agency.objects.create(name="Mitie", employment_type=Agency.EmploymentType.PAYE)
+        self.user = User.objects.create_user(username="tester", password="testpass123")
+        self.mitie = Agency.objects.create(
+            user=self.user, name="Mitie", employment_type=Agency.EmploymentType.PAYE
+        )
         self.r5 = Agency.objects.create(
-            name="R5 Global", employment_type=Agency.EmploymentType.SELF_EMPLOYED
+            user=self.user, name="R5 Global", employment_type=Agency.EmploymentType.SELF_EMPLOYED
         )
         self.paye_site = Site.objects.create(agency=self.mitie, name="PAYE Site")
         self.se_site = Site.objects.create(agency=self.r5, name="SE Site")
@@ -47,8 +51,8 @@ class TaxSummaryServiceTests(TestCase):
         self._shift(self.paye_site, date(2026, 4, 5), rate=Decimal("10.00"))  # last day of 2025/26
         self._shift(self.paye_site, date(2026, 4, 6), rate=Decimal("20.00"))  # first day of 2026/27
 
-        old_year = build_tax_summary(2025)
-        new_year = build_tax_summary(2026)
+        old_year = build_tax_summary(self.user, 2025)
+        new_year = build_tax_summary(self.user, 2026)
 
         self.assertEqual(old_year["totals"]["paye_income"], Decimal("80.00"))
         self.assertEqual(new_year["totals"]["paye_income"], Decimal("160.00"))
@@ -57,7 +61,7 @@ class TaxSummaryServiceTests(TestCase):
         self._shift(self.paye_site, date(2026, 5, 1), rate=Decimal("10.00"))
         self._shift(self.se_site, date(2026, 5, 1), rate=Decimal("20.00"))
 
-        summary = build_tax_summary(2026)
+        summary = build_tax_summary(self.user, 2026)
 
         self.assertEqual(summary["totals"]["paye_income"], Decimal("80.00"))
         self.assertEqual(summary["totals"]["self_employed_income"], Decimal("160.00"))
@@ -67,11 +71,11 @@ class TaxSummaryServiceTests(TestCase):
         profit, since PAYE income carries no self-assessment expense deduction."""
         self._shift(self.se_site, date(2026, 5, 1), rate=Decimal("20.00"))  # £160 SE income
         Expense.objects.create(
-            date=date(2026, 5, 1), category=Expense.Category.TRAVEL, amount=Decimal("50.00"),
-            agency=self.mitie,
+            user=self.user, date=date(2026, 5, 1), category=Expense.Category.TRAVEL,
+            amount=Decimal("50.00"), agency=self.mitie,
         )
 
-        summary = build_tax_summary(2026)
+        summary = build_tax_summary(self.user, 2026)
 
         self.assertEqual(summary["totals"]["self_employed_expenses"], Decimal("0.00"))
         self.assertEqual(summary["totals"]["self_employed_net"], Decimal("160.00"))
@@ -79,11 +83,11 @@ class TaxSummaryServiceTests(TestCase):
     def test_expense_tagged_to_self_employed_agency_reduces_net(self):
         self._shift(self.se_site, date(2026, 5, 1), rate=Decimal("20.00"))  # £160 SE income
         Expense.objects.create(
-            date=date(2026, 5, 1), category=Expense.Category.TRAVEL, amount=Decimal("25.00"),
-            agency=self.r5,
+            user=self.user, date=date(2026, 5, 1), category=Expense.Category.TRAVEL,
+            amount=Decimal("25.00"), agency=self.r5,
         )
 
-        summary = build_tax_summary(2026)
+        summary = build_tax_summary(self.user, 2026)
 
         self.assertEqual(summary["totals"]["self_employed_expenses"], Decimal("25.00"))
         self.assertEqual(summary["totals"]["self_employed_net"], Decimal("135.00"))
@@ -91,11 +95,11 @@ class TaxSummaryServiceTests(TestCase):
     def test_untagged_expense_counts_against_self_employed_net(self):
         self._shift(self.se_site, date(2026, 5, 1), rate=Decimal("20.00"))
         Expense.objects.create(
-            date=date(2026, 5, 1), category=Expense.Category.OTHER, amount=Decimal("10.00"),
-            agency=None,
+            user=self.user, date=date(2026, 5, 1), category=Expense.Category.OTHER,
+            amount=Decimal("10.00"), agency=None,
         )
 
-        summary = build_tax_summary(2026)
+        summary = build_tax_summary(self.user, 2026)
 
         self.assertEqual(summary["totals"]["self_employed_expenses"], Decimal("10.00"))
 
@@ -103,6 +107,21 @@ class TaxSummaryServiceTests(TestCase):
         self._shift(self.se_site, date.today(), rate=Decimal("20.00"))
         start_year = tax_year_start_year()
 
-        summary = build_tax_summary(start_year)
+        summary = build_tax_summary(self.user, start_year)
 
         self.assertEqual(summary["ytd"]["self_employed_income"], summary["totals"]["self_employed_income"])
+
+    def test_only_includes_the_requesting_users_data(self):
+        other = User.objects.create_user(username="other", password="testpass123")
+        other_agency = Agency.objects.create(
+            user=other, name="Other Agency", employment_type=Agency.EmploymentType.PAYE
+        )
+        other_site = Site.objects.create(agency=other_agency, name="Other Site")
+        Shift.objects.create(
+            site=other_site, date=date(2026, 5, 1), start_time=time(9, 0), end_time=time(17, 0),
+            hourly_rate=Decimal("999.00"),
+        )
+
+        summary = build_tax_summary(self.user, 2026)
+
+        self.assertEqual(summary["totals"]["paye_income"], Decimal("0.00"))

@@ -25,3 +25,9 @@ class ShiftSerializer(serializers.ModelSerializer):
             "duration_hours",
             "calculated_pay",
         ]
+
+    def validate_site(self, site):
+        request = self.context["request"]
+        if site.agency.user_id != request.user.id:
+            raise serializers.ValidationError("Not one of your sites.")
+        return site

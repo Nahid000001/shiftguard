@@ -12,17 +12,20 @@ def _sum_pay(shifts):
     return sum((s.calculated_pay for s in shifts), Decimal("0.00"))
 
 
-def build_tax_summary(start_year):
+def build_tax_summary(user, start_year):
     """Build the PAYE vs self-employed income/expense breakdown for a UK tax year."""
     quarters = tax_quarters(start_year)
     today = date.today()
 
     shifts = list(
-        Shift.objects.filter(date__gte=quarters[0]["start"], date__lte=quarters[-1]["end"])
-        .select_related("site", "site__agency")
+        Shift.objects.filter(
+            site__agency__user=user, date__gte=quarters[0]["start"], date__lte=quarters[-1]["end"]
+        ).select_related("site", "site__agency")
     )
     expenses = list(
-        Expense.objects.filter(date__gte=quarters[0]["start"], date__lte=quarters[-1]["end"])
+        Expense.objects.filter(
+            user=user, date__gte=quarters[0]["start"], date__lte=quarters[-1]["end"]
+        )
     )
 
     rows = []

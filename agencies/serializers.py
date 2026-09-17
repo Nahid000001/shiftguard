@@ -15,3 +15,9 @@ class SiteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Site
         fields = ["id", "agency", "agency_name", "name", "address", "default_hourly_rate"]
+
+    def validate_agency(self, agency):
+        request = self.context["request"]
+        if agency.user_id != request.user.id:
+            raise serializers.ValidationError("Not one of your agencies.")
+        return agency

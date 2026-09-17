@@ -12,22 +12,25 @@ def _add_months(d, months):
     return date(year, month, 1)
 
 
-def build_dashboard_summary():
+def build_dashboard_summary(user):
     today = date.today()
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
     month_start = today.replace(day=1)
 
     week_shifts = list(
-        Shift.objects.select_related("site", "site__agency")
+        Shift.objects.filter(site__agency__user=user)
+        .select_related("site", "site__agency")
         .filter(date__gte=week_start, date__lte=week_end)
     )
-    month_shifts = Shift.objects.filter(date__gte=month_start, date__lte=today)
+    month_shifts = Shift.objects.filter(
+        site__agency__user=user, date__gte=month_start, date__lte=today
+    )
 
     month_total = sum((s.calculated_pay for s in month_shifts), Decimal("0.00"))
     week_total = sum((s.calculated_pay for s in week_shifts), Decimal("0.00"))
 
-    licences = list(Licence.objects.all())
+    licences = list(Licence.objects.filter(user=user))
     upcoming_expiries = sorted(
         (l for l in licences if l.is_expired or l.days_until_expiry <= 30),
         key=lambda l: l.days_until_expiry,
@@ -65,9 +68,11 @@ def _bucket_by_category(totals):
     ]
 
 
-def build_charts_data():
+def build_charts_data(user):
     today = date.today()
-    all_shifts = list(Shift.objects.select_related("site", "site__agency").all())
+    all_shifts = list(
+        Shift.objects.filter(site__agency__user=user).select_related("site", "site__agency")
+    )
 
     months = [_add_months(today.replace(day=1), -i) for i in range(5, -1, -1)]
     trend = []

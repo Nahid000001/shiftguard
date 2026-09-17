@@ -1,9 +1,11 @@
 from datetime import date
 
+from django.conf import settings
 from django.db import models
 
 
 class Licence(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="licences")
     name = models.CharField(max_length=200)
     licence_number = models.CharField(max_length=100)
     issue_date = models.DateField()

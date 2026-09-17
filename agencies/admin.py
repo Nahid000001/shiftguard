@@ -5,8 +5,8 @@ from .models import Agency, Site
 
 @admin.register(Agency)
 class AgencyAdmin(admin.ModelAdmin):
-    list_display = ("name", "employment_type")
-    list_filter = ("employment_type",)
+    list_display = ("name", "user", "employment_type")
+    list_filter = ("employment_type", "user")
 
 
 @admin.register(Site)
