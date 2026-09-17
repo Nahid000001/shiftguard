@@ -15,8 +15,9 @@ export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const from = (location.state as { from?: string })?.from ?? "/dashboard";
+
   if (!loading && username) {
-    const from = (location.state as { from?: string })?.from ?? "/";
     return <Navigate to={from} replace />;
   }
 
@@ -26,7 +27,7 @@ export function Login() {
     setSubmitting(true);
     try {
       await login(usernameInput, password);
-      navigate("/", { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       if (err instanceof ApiError && err.status === 400) {
         setError("Invalid username or password.");
@@ -80,7 +81,7 @@ export function Login() {
           <GoogleSignInButton
             onSuccess={(u) => {
               setAuthenticatedUsername(u);
-              navigate("/", { replace: true });
+              navigate(from, { replace: true });
             }}
             onError={setError}
           />

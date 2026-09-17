@@ -37,7 +37,17 @@ README's "Accounts" section for registration and Google sign-in setup.
 - `src/auth/` — `AuthContext` (login/register/logout/session state)
 - `src/components/` — shared `Layout`, `ProtectedRoute`, `PasswordInput` (show/hide toggle), `GoogleSignInButton` (renders nothing if `VITE_GOOGLE_CLIENT_ID` isn't set), and the generic `CrudList`/`CrudForm` used by Agencies/Sites/Licences/Expenses
 - `src/pages/` — one folder per feature; Login and Register both offer Google sign-in; Shifts has a bespoke form (site-rate autofill, duplicate-last-shift) instead of the generic one
+- `src/pages/Landing.tsx` — the public marketing home
 - `src/styles/theme.css` — the same dark palette/tokens as the Django templates, so this reads as a continuation of the same product
+
+## Routing
+
+`/` is public: a signed-out visitor sees the landing page, a signed-in one is
+redirected straight to `/dashboard` (`HomeRoute` in `App.tsx` makes that
+call). Everything else under `ProtectedRoute` needs a session; it's sent to
+`/login` with the originally-requested path preserved in navigation state, so
+signing in returns you to where you were headed rather than always dropping
+you at the dashboard.
 
 Tax summary CSV/PDF export are plain links to the Django endpoints
 (`/reports/tax-summary/export.{csv,pdf}`) rather than JSON+client-side
@@ -47,8 +57,9 @@ download, since they're file downloads, not data to render.
 
 The core app (login, dashboard, shifts, charts, tax summary, CRUD) has been
 confirmed working end-to-end in a real browser. The newer additions -
-registration page, password show/hide toggle, Google sign-in button - have
-**not** yet been browser-verified, same caveat as before: no browser
-automation was available in the session that built them, only TypeScript
-compiling clean and the backend contracts being tested directly. Click
-through those specifically before trusting them.
+registration page, password show/hide toggle, Google sign-in button, the
+public landing page and the `/` vs `/dashboard` routing split - have **not**
+yet been browser-verified, same caveat as before: no browser automation was
+available in the session that built them, only TypeScript compiling clean
+and the backend contracts being tested directly. Click through those
+specifically before trusting them.

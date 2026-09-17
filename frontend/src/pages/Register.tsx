@@ -22,7 +22,7 @@ export function Register() {
   const navigate = useNavigate();
 
   if (!loading && loggedInAs) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -31,7 +31,7 @@ export function Register() {
     setSubmitting(true);
     try {
       await register(usernameInput, password, email || undefined);
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       if (err instanceof ApiError && err.body && typeof err.body === "object") {
         setErrors(err.body as FieldErrors);
@@ -85,7 +85,7 @@ export function Register() {
           <GoogleSignInButton
             onSuccess={(u) => {
               setAuthenticatedUsername(u);
-              navigate("/", { replace: true });
+              navigate("/dashboard", { replace: true });
             }}
             onError={(msg) => setErrors({ detail: msg })}
           />

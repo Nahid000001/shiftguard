@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 const navLinks = [
-  { to: "/", label: "Dashboard" },
+  { to: "/dashboard", label: "Dashboard" },
   { to: "/charts", label: "Charts" },
   { to: "/shifts", label: "Shifts" },
   { to: "/agencies", label: "Agencies" },
@@ -24,11 +24,11 @@ export function Layout() {
   return (
     <>
       <nav>
-        <NavLink to="/" className="brand" end>
+        <NavLink to="/dashboard" className="brand">
           ShiftGuard
         </NavLink>
         {navLinks.map(({ to, label }) => (
-          <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => (isActive ? "active" : "")}>
+          <NavLink key={to} to={to} className={({ isActive }) => (isActive ? "active" : "")}>
             {label}
           </NavLink>
         ))}
