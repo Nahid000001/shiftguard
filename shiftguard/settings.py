@@ -13,8 +13,15 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Loads .env (gitignored) into os.environ if present - so GOOGLE_CLIENT_ID
+# etc. don't need to be re-exported in the shell every time the server
+# starts. Real env vars (e.g. in a deployment) still take precedence.
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
