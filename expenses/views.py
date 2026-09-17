@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
@@ -6,7 +7,7 @@ from .forms import ExpenseForm
 from .models import Expense
 
 
-class ExpenseListView(ListView):
+class ExpenseListView(LoginRequiredMixin, ListView):
     model = Expense
     template_name = "expenses/expense_list.html"
     context_object_name = "expenses"
@@ -15,7 +16,7 @@ class ExpenseListView(ListView):
         return Expense.objects.select_related("agency").all()
 
 
-class ExpenseCreateView(CreateView):
+class ExpenseCreateView(LoginRequiredMixin, CreateView):
     model = Expense
     form_class = ExpenseForm
     template_name = "expenses/expense_form.html"
@@ -26,14 +27,14 @@ class ExpenseCreateView(CreateView):
         return super().form_valid(form)
 
 
-class ExpenseUpdateView(UpdateView):
+class ExpenseUpdateView(LoginRequiredMixin, UpdateView):
     model = Expense
     form_class = ExpenseForm
     template_name = "expenses/expense_form.html"
     success_url = reverse_lazy("expenses:list")
 
 
-class ExpenseDeleteView(DeleteView):
+class ExpenseDeleteView(LoginRequiredMixin, DeleteView):
     model = Expense
     template_name = "expenses/expense_confirm_delete.html"
     success_url = reverse_lazy("expenses:list")

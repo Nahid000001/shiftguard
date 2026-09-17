@@ -1,5 +1,6 @@
 import csv
 
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.views import View
 from django.views.generic import TemplateView
@@ -15,7 +16,7 @@ def _requested_start_year(request):
     return tax_year_start_year()
 
 
-class TaxSummaryView(TemplateView):
+class TaxSummaryView(LoginRequiredMixin, TemplateView):
     template_name = "reports/tax_summary.html"
 
     def get_context_data(self, **kwargs):
@@ -29,7 +30,7 @@ class TaxSummaryView(TemplateView):
         return context
 
 
-class TaxSummaryCSVView(View):
+class TaxSummaryCSVView(LoginRequiredMixin, View):
     def get(self, request):
         start_year = _requested_start_year(request)
         summary = build_tax_summary(start_year)
@@ -71,7 +72,7 @@ class TaxSummaryCSVView(View):
         return response
 
 
-class TaxSummaryPDFView(View):
+class TaxSummaryPDFView(LoginRequiredMixin, View):
     def get(self, request):
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4

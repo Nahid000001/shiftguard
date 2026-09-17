@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
@@ -8,7 +9,7 @@ from .forms import ShiftForm
 from .models import Shift
 
 
-class ShiftListView(ListView):
+class ShiftListView(LoginRequiredMixin, ListView):
     model = Shift
     template_name = "shifts/shift_list.html"
     context_object_name = "shifts"
@@ -23,7 +24,7 @@ class ShiftListView(ListView):
         return context
 
 
-class ShiftCreateView(CreateView):
+class ShiftCreateView(LoginRequiredMixin, CreateView):
     model = Shift
     form_class = ShiftForm
     template_name = "shifts/shift_form.html"
@@ -51,14 +52,14 @@ class ShiftCreateView(CreateView):
         return super().form_valid(form)
 
 
-class ShiftUpdateView(UpdateView):
+class ShiftUpdateView(LoginRequiredMixin, UpdateView):
     model = Shift
     form_class = ShiftForm
     template_name = "shifts/shift_form.html"
     success_url = reverse_lazy("shifts:list")
 
 
-class ShiftDeleteView(DeleteView):
+class ShiftDeleteView(LoginRequiredMixin, DeleteView):
     model = Shift
     template_name = "shifts/shift_confirm_delete.html"
     success_url = reverse_lazy("shifts:list")

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Charts · ShiftGuard{% endblock %}
+{% block content %}
+<style>
+    .viz-root {
+        --chart-grid: #2c2c2a;
+        --chart-muted: #94a3b8;
+        --chart-text: #e2e8f0;
+        --series-1: #3987e5;
+        --series-2: #d95926;
+        --series-3: #199e70;
+        --series-4: #c98500;
+        --series-5: #d55181;
+        --series-6: #008300;
+        --series-7: #9085e9;
+        --series-8: #e66767;
+    }
+    .chart-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .chart-card h2 { margin: 0 0 1rem; color: var(--text); font-size: 1.05rem; }
+    .chart-wrap { position: relative; height: 280px; }
+    details.data-table { margin-top: 0.75rem; }
+    details.data-table summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+    details.data-table table { margin-top: 0.5rem; margin-bottom: 0; }
+</style>
+
+<h1>Charts</h1>
+
+{% if not has_data %}
+<div class="card">No shifts logged yet — charts will appear once you have some data. <a href="{% url 'shifts:create' %}">Log a shift</a>.</div>
+{% else %}
+
+<div class="chart-card viz-root">
+    <h2>Earnings trend (last 6 months)</h2>
+    <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+    <details class="data-table">
+        <summary>View as table</summary>
+        <table>
+            <thead><tr><th>Month</th><th>Earnings</th></tr></thead>
+            <tbody>
+                {% for row in trend %}
+                <tr><td>{{ row.label }}</td><td>£{{ row.total|floatformat:2 }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </details>
+</div>
+
+<div class="chart-card viz-root">
+    <h2>Hours by agency (all time)</h2>
+    <div class="chart-wrap"><canvas id="agencyChart"></canvas></div>
+    <details class="data-table">
+        <summary>View as table</summary>
+        <table>
+            <thead><tr><th>Agency</th><th>Hours</th></tr></thead>
+            <tbody>
+                {% for row in hours_by_agency %}
+                <tr><td>{{ row.name }}</td><td>{{ row.value|floatformat:1 }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </details>
+</div>
+
+<div class="chart-card viz-root">
+    <h2>Pay by site (all time)</h2>
+    <div class="chart-wrap"><canvas id="siteChart"></canvas></div>
+    <details class="data-table">
+        <summary>View as table</summary>
+        <table>
+            <thead><tr><th>Site</th><th>Pay</th></tr></thead>
+            <tbody>
+                {% for row in pay_by_site %}
+                <tr><td>{{ row.name }}</td><td>£{{ row.value|floatformat:2 }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </details>
+</div>
+
+{{ trend|json_script:"trend-data" }}
+{{ hours_by_agency|json_script:"agency-data" }}
+{{ pay_by_site|json_script:"site-data" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const seriesColors = [
+        "#3987e5", "#d95926", "#199e70", "#c98500",
+        "#d55181", "#008300", "#9085e9", "#e66767",
+    ];
+    const gridColor = "#2c2c2a";
+    const mutedColor = "#94a3b8";
+    const textColor = "#e2e8f0";
+    const surface = "#1e293b";
+
+    Chart.defaults.color = mutedColor;
+    Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+    const tooltipBase = {
+        backgroundColor: surface,
+        titleColor: textColor,
+        bodyColor: textColor,
+        borderColor: "#334155",
+        borderWidth: 1,
+        padding: 10,
+        displayColors: false,
+    };
+
+    const trend = JSON.parse(document.getElementById("trend-data").textContent);
+    new Chart(document.getElementById("trendChart"), {
+        type: "line",
+        data: {
+            labels: trend.map((r) => r.label),
+            datasets: [{
+                data: trend.map((r) => r.total),
+                borderColor: seriesColors[0],
+                backgroundColor: seriesColors[0] + "1a",
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: seriesColors[0],
+                pointBorderColor: surface,
+                pointBorderWidth: 2,
+                pointHoverRadius: 6,
+                fill: true,
+                tension: 0.25,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { ...tooltipBase, mode: "index", intersect: false, callbacks: {
+                    label: (ctx) => "£" + ctx.parsed.y.toFixed(2),
+                } },
+            },
+            interaction: { mode: "index", intersect: false },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: mutedColor } },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: gridColor },
+                    ticks: { color: mutedColor, callback: (v) => "£" + v },
+                },
+            },
+        },
+    });
+
+    function categoryChart(canvasId, data, valuePrefix) {
+        new Chart(document.getElementById(canvasId), {
+            type: "bar",
+            data: {
+                labels: data.map((r) => r.name),
+                datasets: [{
+                    data: data.map((r) => r.value),
+                    backgroundColor: data.map((r) => seriesColors[r.color_index % seriesColors.length]),
+                    borderRadius: 4,
+                    borderSkipped: false,
+                    maxBarThickness: 24,
+                    categoryPercentage: 0.6,
+                    barPercentage: 0.9,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { ...tooltipBase, callbacks: {
+                        label: (ctx) => valuePrefix + ctx.parsed.y.toFixed(valuePrefix === "£" ? 2 : 1),
+                    } },
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: mutedColor } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: gridColor },
+                        ticks: { color: mutedColor, callback: (v) => valuePrefix + v },
+                    },
+                },
+            },
+        });
+    }
+
+    categoryChart("agencyChart", JSON.parse(document.getElementById("agency-data").textContent), "");
+    categoryChart("siteChart", JSON.parse(document.getElementById("site-data").textContent), "£");
+})();
+</script>
+{% endif %}
+{% endblock %}

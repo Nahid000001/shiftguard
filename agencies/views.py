@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
@@ -6,13 +7,13 @@ from .forms import AgencyForm, SiteForm
 from .models import Agency, Site
 
 
-class AgencyListView(ListView):
+class AgencyListView(LoginRequiredMixin, ListView):
     model = Agency
     template_name = "agencies/agency_list.html"
     context_object_name = "agencies"
 
 
-class AgencyCreateView(CreateView):
+class AgencyCreateView(LoginRequiredMixin, CreateView):
     model = Agency
     form_class = AgencyForm
     template_name = "agencies/agency_form.html"
@@ -23,20 +24,20 @@ class AgencyCreateView(CreateView):
         return super().form_valid(form)
 
 
-class AgencyUpdateView(UpdateView):
+class AgencyUpdateView(LoginRequiredMixin, UpdateView):
     model = Agency
     form_class = AgencyForm
     template_name = "agencies/agency_form.html"
     success_url = reverse_lazy("agencies:agency-list")
 
 
-class AgencyDeleteView(DeleteView):
+class AgencyDeleteView(LoginRequiredMixin, DeleteView):
     model = Agency
     template_name = "agencies/agency_confirm_delete.html"
     success_url = reverse_lazy("agencies:agency-list")
 
 
-class SiteListView(ListView):
+class SiteListView(LoginRequiredMixin, ListView):
     model = Site
     template_name = "agencies/site_list.html"
     context_object_name = "sites"
@@ -45,7 +46,7 @@ class SiteListView(ListView):
         return Site.objects.select_related("agency").all()
 
 
-class SiteCreateView(CreateView):
+class SiteCreateView(LoginRequiredMixin, CreateView):
     model = Site
     form_class = SiteForm
     template_name = "agencies/site_form.html"
@@ -56,14 +57,14 @@ class SiteCreateView(CreateView):
         return super().form_valid(form)
 
 
-class SiteUpdateView(UpdateView):
+class SiteUpdateView(LoginRequiredMixin, UpdateView):
     model = Site
     form_class = SiteForm
     template_name = "agencies/site_form.html"
     success_url = reverse_lazy("agencies:site-list")
 
 
-class SiteDeleteView(DeleteView):
+class SiteDeleteView(LoginRequiredMixin, DeleteView):
     model = Site
     template_name = "agencies/site_confirm_delete.html"
     success_url = reverse_lazy("agencies:site-list")
