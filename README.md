@@ -60,10 +60,29 @@ app's `tests.py` for exactly what's covered.
 
 New users can self-register three ways, all landing in the same account:
 - `/accounts/register/` (Django-templates UI) or the Register page in the
-  React app — both take username + password
+  React app — both take username + password, with an optional email
 - `POST /api/auth/register/` directly
 - "Sign in with Google" (see below) — creates an account automatically on
   first use, matched/created by email, with no local password
+
+**Email verification.** Registering with an email doesn't just trust it —
+you get a one-time link (printed to the console by default; see "Real email
+delivery" below) to prove you own it. This matters because of how Google
+sign-in matches accounts: it looks up an existing user by email, and if
+nobody had to prove ownership of that email, anyone could register with
+*your* address first and get logged into by your Google sign-in later.
+`accounts/services.py`'s `get_or_create_google_user` only links to an
+existing account if its email is verified — otherwise it creates a brand
+new account, so a squatted, unverified email can never intercept the real
+owner's Google sign-in (see `accounts/tests.py` for the exact scenario this
+is tested against, including a full end-to-end run through the real
+endpoint with only the Google token verification mocked).
+
+**Real email delivery** (optional — defaults to printing to the console,
+which is fine for solo/dev use): set `EMAIL_BACKEND`,
+`EMAIL_HOST`/`EMAIL_PORT`/`EMAIL_HOST_USER`/`EMAIL_HOST_PASSWORD`/
+`EMAIL_USE_TLS`, and `DEFAULT_FROM_EMAIL` env vars for a real SMTP provider
+(SendGrid, Mailgun, SES, etc.) — see `shiftguard/settings.py`.
 
 **Google sign-in setup** (the one piece that needs your action — creating
 OAuth credentials requires your own Google account, so this can't be done
@@ -110,6 +129,7 @@ server port.
 
 ## App structure
 
+- `accounts` — EmailVerification, the Google sign-in trust check, verify-email link view
 - `agencies` — Agency, Site
 - `shifts` — Shift (pay calculation, overnight-shift handling, "duplicate last shift")
 - `licences` — Licence (expiry tracking)

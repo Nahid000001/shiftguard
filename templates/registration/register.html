@@ -33,6 +33,11 @@
             {{ form.username }}
             {{ form.username.errors }}
 
+            <label for="{{ form.email.id_for_label }}">Email (optional)</label>
+            {{ form.email }}
+            {{ form.email.errors }}
+            <p class="help-text">If you add one, you'll get a link to verify it - until then, "Sign in with Google" won't use it to log into this account.</p>
+
             <label for="{{ form.password1.id_for_label }}">Password</label>
             <div class="password-field">
                 {{ form.password1 }}

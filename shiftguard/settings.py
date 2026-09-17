@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django_filters',
     'corsheaders',
     'django_htmx',
+    'accounts',
     'agencies',
     'shifts',
     'licences',
@@ -124,6 +125,18 @@ AUTH_PASSWORD_VALIDATORS = [
 # authorization-code flow - no client secret needed). Unset until you create
 # an OAuth Client ID in Google Cloud Console - see frontend/README.md.
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+
+# Defaults to printing emails to the runserver console - real delivery needs
+# EMAIL_BACKEND/EMAIL_HOST/etc set via env vars (see README "Accounts").
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'true').lower() == 'true'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@shiftguard.local')
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard:index'

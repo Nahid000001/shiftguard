@@ -14,6 +14,7 @@ from shiftguard.auth_api import (
     register_view,
 )
 from shiftguard.views import RegisterView
+from accounts.views import VerifyEmailView
 from expenses.api import ExpenseViewSet
 from licences.api import LicenceViewSet
 from reports.api import tax_summary_api
@@ -31,6 +32,7 @@ urlpatterns = [
     path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('accounts/register/', RegisterView.as_view(), name='register'),
+    path('accounts/verify-email/<uidb64>/<token>/', VerifyEmailView.as_view(), name='verify-email'),
     path('api/', include(router.urls)),
     path('api/dashboard/summary/', dashboard_summary_api, name='api-dashboard-summary'),
     path('api/dashboard/charts/', charts_data_api, name='api-dashboard-charts'),

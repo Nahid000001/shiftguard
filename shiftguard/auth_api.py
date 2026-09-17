@@ -10,6 +10,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from accounts.services import (
+    get_or_create_google_user,
+    send_verification_email,
+    start_email_verification,
+)
+
 User = get_user_model()
 
 
@@ -78,6 +84,9 @@ def register_view(request):
         return Response(errors, status=400)
 
     user = User.objects.create_user(username=username, email=email, password=password)
+    if email:
+        start_email_verification(user, email)
+        send_verification_email(user, email, request)
     login(request, user)
     return Response({"username": user.username}, status=201)
 
@@ -110,17 +119,7 @@ def google_login_view(request):
     if not email or not claims.get("email_verified"):
         return Response({"detail": "Google account has no verified email."}, status=400)
 
-    user = User.objects.filter(email=email).first()
-    if user is None:
-        username = email
-        suffix = 1
-        while User.objects.filter(username=username).exists():
-            suffix += 1
-            username = f"{email}-{suffix}"
-        user = User.objects.create_user(username=username, email=email)
-        user.set_unusable_password()
-        user.save()
-
+    user = get_or_create_google_user(email)
     login(request, user)
     return Response({"username": user.username})
 
